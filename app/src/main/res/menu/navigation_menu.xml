@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/btnHome"
+        android:title="Home"
+        android:icon="@drawable/home"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/btnNotification"
+        android:title="Notification"
+        android:icon="@drawable/notification"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/btnAdministrator"
+        android:title="Administrator"
+        android:icon="@drawable/administrator"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/btnScheduleManager"
+        android:title="Schedule Manager"
+        android:icon="@drawable/major"
+        android:checkable="true"/>
+
+    <item
+        android:id="@+id/btnSignOut"
+        android:title="Sign Out"
+        android:icon="@drawable/signout"/>
+
+</menu>

@@ -1,0 +1,176 @@
+package com.schedule.rt.sync.viewmodel
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.schedule.rt.sync.dataclass.DataClassClasses
+
+class ViewModelClasses: ViewModel() {
+
+    private val databaseReference = FirebaseDatabase.getInstance().getReference("classes")
+
+    var uidMajor: String? = null
+    var uidLevel: String? = null
+
+    private val _dataClasses = MutableLiveData<List<DataClassClasses>>()
+    val dataClasses: LiveData<List<DataClassClasses>> = _dataClasses
+
+    fun getClasses() {
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listClasses = mutableListOf<DataClassClasses>()
+                for (dataSnapshot in snapshot.children) {
+                    val getClasses = dataSnapshot.getValue(DataClassClasses::class.java)
+                    getClasses?.let { listClasses.add(it) }
+                }
+                _dataClasses.value = listClasses
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+
+    fun getClassesByUid(uidClasses: String?): LiveData<DataClassClasses?> {
+        val dataClassClasses = MutableLiveData<DataClassClasses?>()
+        val ref = databaseReference.child(uidClasses.toString())
+        ref.addValueEventListener(object: ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val dataClasses = snapshot.getValue(DataClassClasses::class.java)
+                dataClassClasses.value = dataClasses
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return dataClassClasses
+    }
+
+    fun addClasses(dataClassClasses: DataClassClasses): LiveData<String?> {
+        val addClassesStatus = MutableLiveData<String?>()
+        val uidClasses = databaseReference.push().key.toString()
+        val nameClasses = dataClassClasses.nameClasses
+        dataClassClasses.uidMajor = uidMajor
+        dataClassClasses.uidLevel = uidLevel
+        dataClassClasses.uidClasses = uidClasses
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var isExist = false
+                for (child in snapshot.children) {
+                    val dataClasses = child.getValue(DataClassClasses::class.java)
+                    if (dataClasses?.nameClasses == nameClasses) {
+                        isExist = true
+                        break
+                    }
+                }
+
+                if (isExist == true) {
+                    addClassesStatus.value = "Exist"
+                } else {
+                    databaseReference.child(uidClasses).setValue(dataClassClasses).addOnSuccessListener {
+                        addClassesStatus.value = "Success"
+                    }.addOnFailureListener {
+                        addClassesStatus.value = "Fail"
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return addClassesStatus
+    }
+
+    fun editClasses(dataClassClasses: DataClassClasses): LiveData<String?> {
+        val editClassesStatus = MutableLiveData<String?>()
+        val uidClasses = dataClassClasses.uidClasses.toString()
+        val nameClasses = dataClassClasses.nameClasses.toString()
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var isExist = false
+                for (child in snapshot.children) {
+                    val dataClasses = child.getValue(DataClassClasses::class.java)
+                    if (dataClasses?.nameClasses == nameClasses && dataClasses.uidClasses != uidClasses) {
+                        isExist = true
+                        break
+                    }
+                }
+
+                if (isExist == true) {
+                    editClassesStatus.value = "Exist"
+                } else {
+                    val updateMap = mapOf(
+                        "nameClasses" to nameClasses,
+                    )
+                    databaseReference.child(uidClasses).updateChildren(updateMap).addOnSuccessListener {
+                        editClassesStatus.value = "Success"
+                    }.addOnFailureListener {
+                        editClassesStatus.value = "Fail"
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return editClassesStatus
+    }
+
+    fun deleteClasses(uidClasses : String?): LiveData<String?> {
+        val deleteClassesStatus = MutableLiveData<String?>()
+
+        deleteCourse(uidClasses)
+
+        databaseReference.child(uidClasses.toString()).removeValue().addOnSuccessListener {
+            deleteClassesStatus.value = "Success"
+        }.addOnFailureListener {
+            deleteClassesStatus.value = "Fail"
+        }
+        return deleteClassesStatus
+    }
+
+    private fun deleteCourse(uidClasses: String?) {
+        val ref = FirebaseDatabase.getInstance().getReference("courses").orderByChild("uidClasses").equalTo(uidClasses)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (child in snapshot.children) {
+                        child.ref.removeValue()
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+
+    fun getClassesSizeByLevel(uidLevel: String?): LiveData<Int?> {
+        val classesSize = MutableLiveData<Int?>()
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                classesSize.value = snapshot.childrenCount.toInt()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return classesSize
+    }
+}

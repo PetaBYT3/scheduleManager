@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "47910480344",
+    "firebase_url": "https://schedulertsync-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "schedulertsync",
+    "storage_bucket": "schedulertsync.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47910480344:android:024c535f9a68dbd0dceaad",
+        "android_client_info": {
+          "package_name": "com.schedule.rt.sync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjw62XnKsUhrE6VJeBJSSs9dUiRxvdWxQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
