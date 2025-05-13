@@ -16,7 +16,7 @@
             android:id="@+id/clToolBar"
             android:background="?attr/colorSurface"
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="120dp"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:title="Home"
             app:titleCollapseMode="scale"
@@ -43,167 +43,181 @@
         android:layout_height="wrap_content"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
-            android:orientation="vertical"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="15dp"
+                app:layout_constraintBottom_toBottomOf="@+id/btnAllSchedule"
+                app:layout_constraintEnd_toStartOf="@+id/btnAllSchedule"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/btnAllSchedule">
+
+                <ImageView
+                    android:id="@+id/ivItem"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:src="@drawable/profile" />
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/ivItem"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/ivItem"
+                    app:layout_constraintTop_toTopOf="@+id/ivItem"
+                    tools:text="Tittle" />
+
+                <TextView
+                    android:id="@+id/tvData1"
+                    android:layout_width="0dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+                    app:layout_constraintStart_toStartOf="@+id/tvTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+                    tools:text="Data 1" />
+
+                <TextView
+                    android:id="@+id/tvData2"
+                    android:layout_width="0dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+                    app:layout_constraintStart_toStartOf="@+id/tvTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/tvData1"
+                    tools:text="Data 2" />
+
+                <TextView
+                    android:id="@+id/tvData3"
+                    android:layout_width="0dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+                    app:layout_constraintStart_toStartOf="@+id/tvTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/tvData2"
+                    tools:text="Data 3" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/btnAllSchedule"
+                android:layout_marginEnd="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:padding="20dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/imageView7"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/schedule"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/textView3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="All"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView7"
+                    app:layout_constraintStart_toStartOf="@+id/imageView7"
+                    app:layout_constraintTop_toBottomOf="@+id/imageView7" />
+
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Schedule"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView7"
+                    app:layout_constraintStart_toStartOf="@+id/imageView7"
+                    app:layout_constraintTop_toBottomOf="@+id/textView3" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Today Schedule"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btnAllSchedule" />
+
+            <ProgressBar
+                android:id="@+id/pbRv"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:indeterminateTint="?attr/colorOnSurface"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/todaySchedule" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/todaySchedule"
+                android:layout_marginTop="20dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:orientation="vertical">
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintTop_toBottomOf="@+id/textView4"
+                tools:itemCount="11"
+                tools:listitem="@layout/item_parent"/>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnLecturer"
-                    android:layout_width="match_parent"
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layoutNoData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/todaySchedule"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/imageView5"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@drawable/no_data"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardCornerRadius="20dp">
+                    android:layout_marginStart="10dp"
+                    android:text="No Schedule"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/imageView5"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="20dp">
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
-                        <TextView
-                            android:id="@+id/tvLecturer"
-                            android:layout_marginEnd="10dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Lecturer Data"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            app:layout_constraintEnd_toStartOf="@+id/imageView2"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                        <TextView
-                            android:id="@+id/tvLecturerDescription"
-                            android:layout_marginTop="5dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Decsription"
-                            android:textAppearance="?attr/textAppearanceBodySmall"
-                            app:layout_constraintEnd_toEndOf="@+id/tvLecturer"
-                            app:layout_constraintStart_toStartOf="@+id/tvLecturer"
-                            app:layout_constraintTop_toBottomOf="@+id/tvLecturer" />
-
-                        <ImageView
-                            android:id="@+id/imageView2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="96dp"
-                            android:src="@drawable/next"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnMajor"
-                    android:layout_marginTop="10dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardCornerRadius="20dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:id="@+id/tvMajor"
-                            android:layout_marginEnd="10dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Major"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            app:layout_constraintEnd_toStartOf="@+id/imageView3"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                        <TextView
-                            android:id="@+id/tvMajorDescription"
-                            android:layout_marginTop="5dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Decsription"
-                            android:textAppearance="?attr/textAppearanceBodySmall"
-                            app:layout_constraintEnd_toEndOf="@+id/tvMajor"
-                            app:layout_constraintStart_toStartOf="@+id/tvMajor"
-                            app:layout_constraintTop_toBottomOf="@+id/tvMajor" />
-
-                        <ImageView
-                            android:id="@+id/imageView3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="96dp"
-                            android:src="@drawable/next"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnBuilding"
-                    android:layout_marginTop="10dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardCornerRadius="20dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:id="@+id/tvBuilding"
-                            android:layout_marginEnd="10dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Building"
-                            android:textAppearance="?attr/textAppearanceTitleMedium"
-                            app:layout_constraintEnd_toStartOf="@+id/imageView4"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                        <TextView
-                            android:id="@+id/tvBuildingDescription"
-                            android:layout_marginTop="5dp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Decsription"
-                            android:textAppearance="?attr/textAppearanceBodySmall"
-                            app:layout_constraintEnd_toEndOf="@+id/tvBuilding"
-                            app:layout_constraintStart_toStartOf="@+id/tvBuilding"
-                            app:layout_constraintTop_toBottomOf="@+id/tvBuilding" />
-
-                        <ImageView
-                            android:id="@+id/imageView4"
-                            android:layout_width="wrap_content"
-                            android:layout_height="96dp"
-                            android:src="@drawable/next"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-            </LinearLayout>
-
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.core.widget.NestedScrollView>
 

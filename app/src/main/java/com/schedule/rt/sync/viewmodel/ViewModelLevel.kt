@@ -13,13 +13,16 @@ class ViewModelLevel: ViewModel() {
 
     private val databaseReference = FirebaseDatabase.getInstance().getReference("levels")
 
-    var uidMajor: String? = null
+    private val _uidMajorReference = MutableLiveData<String?>()
+    val uidMajorReference: LiveData<String?> get() = _uidMajorReference
 
-    private val _dataLevel = MutableLiveData<List<DataClassLevel>>()
-    val dataLevel : LiveData<List<DataClassLevel>> get() = _dataLevel
+    fun uidMajorReference(uidMajor: String?) {
+        _uidMajorReference.value = uidMajor
+    }
 
-    fun getLevel() {
-        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+    fun getLevel(): LiveData<List<DataClassLevel>> {
+        val dataLevel = MutableLiveData<List<DataClassLevel>>()
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajorReference.value)
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val listLevel = mutableListOf<DataClassLevel>()
@@ -27,13 +30,14 @@ class ViewModelLevel: ViewModel() {
                     val getLevel = dataSnapshot.getValue(DataClassLevel::class.java)
                     getLevel?.let { listLevel.add(it) }
                 }
-                _dataLevel.value = listLevel
+                dataLevel.value = listLevel
             }
 
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }
         })
+        return dataLevel
     }
 
     fun getLevelByUid(uidLevel: String?): LiveData<DataClassLevel?> {
@@ -56,8 +60,8 @@ class ViewModelLevel: ViewModel() {
         val level = dataClassLevel.level
         val uidLevel = databaseReference.push().key.toString()
         dataClassLevel.uidLevel = uidLevel
-        dataClassLevel.uidMajor = uidMajor
-        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+        dataClassLevel.uidMajor = uidMajorReference.value
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajorReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false
@@ -91,7 +95,7 @@ class ViewModelLevel: ViewModel() {
         val editLevelStatus = MutableLiveData<String?>()
         val level = dataClassLevel.level
         val uidLevel = dataClassLevel.uidLevel.toString()
-        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajorReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false

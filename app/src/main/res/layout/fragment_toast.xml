@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".fragment.FragmentToast"
+    android:padding="10dp"
+    android:layout_margin="10dp"
+    android:animateLayoutChanges="true"
+    android:background="@drawable/bg_toast">
+
+    <ImageView
+        android:id="@+id/ivToast"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/fail" />
+
+    <TextView
+        android:id="@+id/tvToast"
+        android:layout_marginStart="10dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/ivToast"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Message" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

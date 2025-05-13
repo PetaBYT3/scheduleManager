@@ -5,17 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
 import com.schedule.rt.sync.databinding.FragmentAdministratorBinding
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
 
 class FragmentAdministrator : Fragment() {
 
-    private lateinit var binding: FragmentAdministratorBinding
+    private var _binding: FragmentAdministratorBinding? = null
+    private val binding get() = _binding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,14 +26,12 @@ class FragmentAdministrator : Fragment() {
         reenterTransition = TransitionUtil.reenterTransition()
     }
 
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentAdministratorBinding.inflate(inflater, container, false)
+        _binding = FragmentAdministratorBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -51,7 +49,7 @@ class FragmentAdministrator : Fragment() {
         binding.btnLecturer.setOnClickListener {
             requireActivity().supportFragmentManager.commit {
                 setReorderingAllowed(true)
-                replace(R.id.fragmentContainer, FragmentDataLecturer::class.java, null)
+                replace(R.id.mainFragmentContainer, FragmentDataLecturer::class.java, null)
                 addToBackStack(null)
             }
         }
@@ -59,7 +57,7 @@ class FragmentAdministrator : Fragment() {
         binding.btnMajor.setOnClickListener {
             requireActivity().supportFragmentManager.commit {
                 setReorderingAllowed(true)
-                replace(R.id.fragmentContainer, FragmentDataMajor::class.java, null)
+                replace(R.id.mainFragmentContainer, FragmentDataMajor::class.java, null)
                 addToBackStack(null)
             }
         }
@@ -67,9 +65,15 @@ class FragmentAdministrator : Fragment() {
         binding.btnBuilding.setOnClickListener {
             requireActivity().supportFragmentManager.commit {
                 setReorderingAllowed(true)
-                replace(R.id.fragmentContainer, FragmentDataBuilding::class.java, null)
+                replace(R.id.mainFragmentContainer, FragmentDataBuilding::class.java, null)
                 addToBackStack(null)
             }
         }
+    }
+
+    override fun onDestroyView() {
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        super.onDestroyView()
+        _binding = null
     }
 }

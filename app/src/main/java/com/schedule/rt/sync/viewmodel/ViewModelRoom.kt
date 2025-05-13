@@ -7,33 +7,37 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.schedule.rt.sync.dataclass.DataClassCourse
 import com.schedule.rt.sync.dataclass.DataClassRoom
 
 class ViewModelRoom: ViewModel() {
 
     val databaseReference = FirebaseDatabase.getInstance().getReference("rooms")
 
-    var uidBuilding: String? = null
-    var uidRoom: String? = null
+    private val _uidBuildingReference = MutableLiveData<String?>()
+    val uidBuildingReference: LiveData<String?> get() = _uidBuildingReference
 
-    private val _dataRoom = MutableLiveData<List<DataClassRoom>>()
-    val dataRoom: LiveData<List<DataClassRoom>> get() = _dataRoom
+    fun uidBuildingReference(uidBuilding: String?) {
+        _uidBuildingReference.value = uidBuilding
+    }
 
-    fun getRoom() {
-        databaseReference.orderByChild("uidBuilding").equalTo(uidBuilding).addValueEventListener(object : ValueEventListener {
+    fun getRoom(): LiveData<List<DataClassRoom>> {
+        val dataRoom = MutableLiveData<List<DataClassRoom>>()
+        databaseReference.orderByChild("uidBuilding").equalTo(uidBuildingReference.value).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val listRoom = mutableListOf<DataClassRoom>()
                 for (dataSnapshot in snapshot.children) {
                     val getRoom = dataSnapshot.getValue(DataClassRoom::class.java)
                     getRoom?.let { listRoom.add(it) }
                 }
-                _dataRoom.value = listRoom
+                dataRoom.value = listRoom
             }
 
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }
         })
+        return dataRoom
     }
 
     fun getRoomByUid(uidRoom: String?): LiveData<DataClassRoom?> {
@@ -51,12 +55,12 @@ class ViewModelRoom: ViewModel() {
     }
 
     fun addRoom(dataClassRoom: DataClassRoom): LiveData<String?> {
-        val addRoomStatus = MutableLiveData<String?>()
+        val result = MutableLiveData<String?>()
         val uidRoom = databaseReference.push().key.toString()
         val nameRoom = dataClassRoom.nameRoom
         dataClassRoom.uidRoom = uidRoom
-        dataClassRoom.uidBuilding = uidBuilding
-        databaseReference.orderByChild("uidBuilding").equalTo(uidBuilding).addListenerForSingleValueEvent(object : ValueEventListener {
+        dataClassRoom.uidBuilding = uidBuildingReference.value
+        databaseReference.orderByChild("uidBuilding").equalTo(uidBuildingReference.value).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false
                 for (child in snapshot.children) {
@@ -68,21 +72,21 @@ class ViewModelRoom: ViewModel() {
                 }
 
                 if (isExist == true) {
-                    addRoomStatus.value = "Exist"
+                    result.value = "Exist"
                 } else {
                     databaseReference.child(uidRoom).setValue(dataClassRoom).addOnSuccessListener {
-                        addRoomStatus.value = "Success"
+                        result.value = "Success"
                     }.addOnFailureListener {
-                        addRoomStatus.value = "Fail"
+                        result.value = "Fail"
                     }
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                result.value = "Error"
             }
         })
-        return addRoomStatus
+        return result
     }
 
     fun editRoom(dataClassRoom: DataClassRoom): LiveData<String?> {
@@ -113,12 +117,34 @@ class ViewModelRoom: ViewModel() {
     }
 
     fun deleteRoom(uidRoom: String?): LiveData<String?> {
-        val deleteRoomStatus = MutableLiveData<String?>()
-        databaseReference.child(uidRoom.toString()).removeValue().addOnSuccessListener {
-            deleteRoomStatus.value = "Success"
-        }.addOnFailureListener {
-            deleteRoomStatus.value = "Fail"
-        }
-        return deleteRoomStatus
+        val result = MutableLiveData<String?>()
+        val courseRef = FirebaseDatabase.getInstance().getReference("courses").orderByChild("uidRoom").equalTo(uidRoom)
+        courseRef.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (snapshot in snapshot.children) {
+                    val getCourse = snapshot.getValue(DataClassCourse::class.java)
+                    if (getCourse?.uidRoom == uidRoom) {
+                        val updateChildren = mapOf(
+                            "day" to null,
+                            "startTime" to null,
+                            "endTime" to null,
+                            "uidBuilding" to null,
+                            "uidRoom" to null,
+                            "uidRoomDay" to null
+                        )
+                        snapshot.ref.updateChildren(updateChildren)
+                    }
+                }
+                databaseReference.child(uidRoom.toString()).removeValue().addOnSuccessListener {
+                    result.value = "Success"
+                }.addOnFailureListener {
+                    result.value = "Fail"
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                result.value = "Error"
+            }
+        })
+        return result
     }
 }

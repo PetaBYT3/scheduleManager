@@ -6,30 +6,28 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
-import com.schedule.rt.sync.adapter.AdapterDataBuilding
+import com.schedule.rt.sync.adapter.AdapterBuilding
 import com.schedule.rt.sync.databinding.FragmentDataBuildingBinding
 import com.schedule.rt.sync.dataclass.DataClassBuilding
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 
 class FragmentDataBuilding : Fragment() {
 
-    private lateinit var binding: FragmentDataBuildingBinding
+    private var _binding: FragmentDataBuildingBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvBuilding: AdapterDataBuilding
-
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
-    private val viewModelBuilding : ViewModelBuilding by activityViewModels()
-    private val viewModelRoom : ViewModelRoom by activityViewModels()
+    private val vmBuilding : ViewModelBuilding by activityViewModels()
+    private val vmRoom : ViewModelRoom by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +43,7 @@ class FragmentDataBuilding : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataBuildingBinding.inflate(inflater, container, false)
+        _binding = FragmentDataBuildingBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -56,12 +54,6 @@ class FragmentDataBuilding : Fragment() {
             TransitionUtil.slideUpTransition(binding.nestedScrollView)
         }
 
-        actionBar()
-
-        rvBuilding()
-    }
-
-    private fun actionBar() {
         binding.toolBar.setNavigationOnClickListener {
             parentFragmentManager.popBackStack()
         }
@@ -69,17 +61,107 @@ class FragmentDataBuilding : Fragment() {
         binding.btnAdd.setOnClickListener {
             addBuilding()
         }
+
+        rvBuilding()
     }
 
     private fun rvBuilding() {
-        recyclerView = binding.rvBuilding
-        adapterRvBuilding = AdapterDataBuilding(viewModelBuilding, viewLifecycleOwner)
-        recyclerView.adapter = adapterRvBuilding
+        val recyclerView: RecyclerView = binding.rvBuilding
+        val adapter = AdapterBuilding(
+            btnFirst = true,
+            btnSecond = true,
+            btnNext = true,
+            onFirstClick = {
+                val uidBuilding = it.uidBuilding
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-        viewModelBuilding.getBuilding()
-        viewModelBuilding.dataBuilding.observe(viewLifecycleOwner) {
-            adapterRvBuilding.updateRvBuilding(it)
-            if (it.isEmpty()) {
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
+
+                        inputBinding.toolBar.title = "Edit Building"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
+
+                        vmBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.nameBuilding)
+                        }
+
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                            val dataBuilding = DataClassBuilding(
+                                nameBuilding = etFirst
+                            )
+
+                            vmBuilding.editBuilding(dataBuilding).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    }
+                                    "Exist" -> {
+                                        showToastFragment(FragmentToast(R.drawable.copy, "Building Exist"))
+                                    }
+                                    else -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                addFragmentWithoutBackStack(fragmentInput)
+            },
+            onSecondClick = {
+                val uidBuilding = it.uidBuilding
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
+
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
+
+                        cardBinding.toolBar.title = "Delete Building"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
+
+                        vmBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
+                            cardBinding.tvTitle.text = buildString {
+                                append("Building ")
+                                append(it?.nameBuilding)
+                            }
+                        }
+
+                        cardBinding.btnYes.setOnClickListener {
+                            vmBuilding.deleteBuilding(uidBuilding).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    }
+                                    else -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                addFragmentWithoutBackStack(fragmentCard)
+            },
+            onNextClick = {
+                val uidBuilding = it.uidBuilding
+                vmRoom.uidBuildingReference(uidBuilding)
+                replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentDataRoom(), null)
+            }
+        )
+
+        recyclerView.adapter = adapter
+
+        vmBuilding.getBuilding().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
                 binding.pbRv.visibility = View.GONE
                 binding.layoutNoData.visibility = View.VISIBLE
             } else {
@@ -87,172 +169,54 @@ class FragmentDataBuilding : Fragment() {
                 binding.layoutNoData.visibility = View.GONE
             }
         }
-
-        adapterRvBuilding.setOnItemClickListener(object : AdapterDataBuilding.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val uidBuilding = adapterRvBuilding.dataClassBuilding[position].uidBuilding
-                viewModelAdministrator.uidBuilding = uidBuilding
-                viewModelRoom.uidBuilding = uidBuilding
-                requireActivity().supportFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    replace(R.id.fragmentContainer, FragmentDataRoom::class.java, null)
-                    addToBackStack(null)
-                }
-            }
-
-            override fun onEditClick(position: Int) {
-                DialogUtil.showBottomSheet1Et(
-                    requireActivity(),
-                    "Edit Building",
-                    "Name Building",
-                    R.drawable.edit,
-                    "Edit"
-                ) { bottomSheetBinding, bottomSheet ->
-
-                    val uidBuilding = adapterRvBuilding.dataClassBuilding[position].uidBuilding
-
-                    viewModelBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
-                        bottomSheetBinding.etFirst.setText(it?.nameBuilding)
-                    }
-
-                    bottomSheetBinding.btnYes.setOnClickListener {
-                        val etFirst =
-                            bottomSheetBinding.etFirst.text.toString().capitalizeEachWord()
-                                .capitalizeAfterDot()
-                        val dataBuilding =
-                            DataClassBuilding(uidBuilding = uidBuilding, nameBuilding = etFirst)
-
-                        if (etFirst.isNotEmpty()) {
-                            viewModelBuilding.editBuilding(dataBuilding).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Success",
-                                                R.drawable.check
-                                            )
-                                            bottomSheet.dismiss()
-                                        }
-
-                                        "Exist" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Exist",
-                                                R.drawable.warning
-                                            )
-                                        }
-
-                                        "Fail" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Fail",
-                                                R.drawable.warning
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            DialogUtil.showToast(requireActivity(), "Empty", R.drawable.warning)
-                        }
-                    }
-                }
-            }
-
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Delete Building",
-                    R.drawable.delete,
-                    "Delete",
-                    { bottomSheetBinding, bottomSheet ->
-
-                        val uidBuilding = adapterRvBuilding.dataClassBuilding[position].uidBuilding
-                        viewModelBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = buildString {
-                                append("Building ")
-                                append(it?.nameBuilding)
-                            }
-                        }
-
-                        viewModelBuilding.getRoomSize(uidBuilding).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvData1.text = buildString {
-                                append(it?.toString())
-                                append(" Room")
-                            }
-                        }
-
-                        bottomSheetBinding.btnYes.setOnClickListener {
-                            viewModelBuilding.deleteBuilding(uidBuilding).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(requireActivity(), "Success", R.drawable.check)
-                                            bottomSheet.dismiss()
-                                        }
-                                        "Fail" -> {
-                                            DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                )
-            }
-        })
     }
 
     private fun addBuilding() {
-        DialogUtil.showBottomSheet1Et(
-            requireActivity(),
-            "Add Building",
-            "Name Building",
-            R.drawable.add,
-            "Add"
-        ) { bottomSheetBinding, bottomSheet ->
+        val fragmentInput = FragmentInput().apply {
+            onViewCreated = { inputBinding ->
 
-            bottomSheetBinding.btnYes.setOnClickListener {
-                val etFirst = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord()
-                    .capitalizeAfterDot()
-                val dataBuilding = DataClassBuilding(nameBuilding = etFirst)
+                inputBinding.toolBar.setNavigationOnClickListener {
+                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                }
 
-                if (etFirst.isNotEmpty()) {
-                    viewModelBuilding.addBuilding(dataBuilding).observe(viewLifecycleOwner) {
-                        if (it != null) {
+                inputBinding.toolBar.title = "Add Building"
+                inputBinding.tiFirst.hint = "Building Name"
+                inputBinding.ivYes.setImageResource(R.drawable.add)
+                inputBinding.tvYes.text = "Add"
+
+                inputBinding.btnYes.setOnClickListener {
+                    val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    val dataBuilding = DataClassBuilding(
+                        nameBuilding = etFirst
+                    )
+
+                    if (etFirst.isNotEmpty()) {
+                        vmBuilding.addBuilding(dataBuilding).observe(viewLifecycleOwner) {
                             when (it) {
                                 "Success" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Success",
-                                        R.drawable.check
-                                    )
-                                    bottomSheet.dismiss()
+                                    showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                 }
-
                                 "Exist" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Exist",
-                                        R.drawable.warning
-                                    )
+                                    showToastFragment(FragmentToast(R.drawable.copy, "Building Already Exist"))
                                 }
-
-                                "Fail" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Fail",
-                                        R.drawable.warning
-                                    )
+                                else -> {
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
                                 }
                             }
                         }
+                    } else {
+                        showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                     }
-                } else {
-                    DialogUtil.showToast(requireActivity(), "Empty", R.drawable.warning)
                 }
             }
         }
+        addFragmentWithoutBackStack(fragmentInput)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        _binding = null
     }
 }

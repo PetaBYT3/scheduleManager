@@ -14,28 +14,19 @@ import com.schedule.rt.sync.dataclass.DataClassUser
 
 class ViewModelUser(application: Application) : AndroidViewModel(application) {
 
-    init {
-        getUser()
-    }
+    private val firebaseAuth = FirebaseAuth.getInstance()
+    private val databaseReference = FirebaseDatabase.getInstance().getReference("users")
 
-    private val _dataUser = MutableLiveData<DataClassUser?>()
-    val dataUser : LiveData<DataClassUser?> get() = _dataUser
-
-    fun getUser() {
-        val uidUser = FirebaseAuth.getInstance().currentUser?.uid
-        if (uidUser != null) {
-            val userDataBaseReference = FirebaseDatabase.getInstance().getReference("users").child(uidUser.toString())
+    fun getUser(): LiveData<DataClassUser?> {
+        val dataUser = MutableLiveData<DataClassUser?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        if (currentUser != null) {
+            val userDataBaseReference = FirebaseDatabase.getInstance().getReference("users").child(currentUser.toString())
             userDataBaseReference.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        val dataUser = snapshot.getValue(DataClassUser::class.java)
-                        _dataUser.value = dataUser
-
-                        // Get Lecturer
-                        val uidLecturer = dataUser?.uidLecturer
-                        if (uidLecturer != null) {
-                            getLecturer(uidLecturer)
-                        }
+                        val getUser = snapshot.getValue(DataClassUser::class.java)
+                        dataUser.value = getUser
                     }
                 }
 
@@ -44,24 +35,173 @@ class ViewModelUser(application: Application) : AndroidViewModel(application) {
                 }
             })
         }
+        return dataUser
     }
 
-    private val _dataLecturer = MutableLiveData<DataClassLecturer?>()
-    val dataLecturer : LiveData<DataClassLecturer?> get() = _dataLecturer
+    fun signIn(email : String?, password : String?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        if (email.isNullOrEmpty() || password.isNullOrEmpty()) {
+            result.value = "Empty"
+        } else {
+            firebaseAuth.signInWithEmailAndPassword(email.toString(), password.toString()).addOnCompleteListener {
+                if (it.isSuccessful) {
+                    result.value = "Success"
+                } else {
+                    result.value = "Fail"
+                }
+            }.addOnFailureListener {
+                result.value = "Error"
+            }
+        }
+        return result
+    }
 
-    fun getLecturer(uidLecturer : String) {
-        val lecturerDatabaseReference = FirebaseDatabase.getInstance().getReference("lecturers").child(uidLecturer)
-        lecturerDatabaseReference.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val dataLecturer = snapshot.getValue(DataClassLecturer::class.java)
-                    _dataLecturer.value = dataLecturer
+    fun signUp(email : String?, password : String?, retypePassword : String?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        if (email.isNullOrEmpty() || password.isNullOrEmpty() || retypePassword.isNullOrEmpty()) {
+            result.value = "Empty"
+        } else {
+            if (password != retypePassword) {
+                result.value = "Password Not Match"
+            } else {
+                firebaseAuth.createUserWithEmailAndPassword(email.toString(), password.toString()).addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        val currentUser = it.result.user?.uid
+                        if (currentUser != null) {
+                            val updateChildren = mapOf(
+                                "uidUser" to currentUser,
+                            )
+                            databaseReference.child(currentUser).updateChildren(updateChildren).addOnCompleteListener {
+                                if (it.isSuccessful) {
+                                    result.value = "Success"
+                                } else {
+                                    result.value = "Fail"
+                                }
+                            }.addOnFailureListener {
+                                result.value = "Error"
+                            }
+                        }
+                    }
+                }.addOnFailureListener {
+                    result.value = "Error"
                 }
             }
+        }
+        return result
+    }
 
-            override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+    fun addUserFromGoogle(): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        if (currentUser != null) {
+            val updateChildren = mapOf(
+                "uidUser" to currentUser,
+            )
+            databaseReference.child(currentUser).updateChildren(updateChildren).addOnCompleteListener {
+                if (it.isSuccessful) {
+                    result.value = "Success"
+                } else {
+                    result.value = "Fail"
+                }
             }
-        })
+        }
+        return result
+    }
+
+    fun addUserData(dataUser: DataClassUser?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        dataUser?.uidUser = currentUser
+        val ref = databaseReference.child(currentUser.toString())
+        ref.setValue(dataUser).addOnCompleteListener {
+            if (it.isSuccessful) {
+                result.value = "Success"
+            } else {
+                result.value = "Fail"
+            }
+        }.addOnFailureListener {
+            result.value = "Error"
+        }
+
+        return result
+    }
+
+    fun getLecturerByNik(nik: String?): Pair<LiveData<String?>, LiveData<String?>> {
+        val result = MutableLiveData<String?>()
+        val uidLecturer = MutableLiveData<String?>()
+        if (nik.isNullOrEmpty()) {
+            result.value = "Empty"
+        } else {
+            val lecturerRef = FirebaseDatabase.getInstance().getReference("lecturers").orderByChild("nikLecturer").equalTo(nik)
+            lecturerRef.addListenerForSingleValueEvent(object : ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val dataLecturer = MutableLiveData<DataClassLecturer?>()
+                        for (child in snapshot.children) {
+                            val getData = child.getValue(DataClassLecturer::class.java)
+                            dataLecturer.value = getData
+                        }
+                        uidLecturer.value = dataLecturer.value?.uidLecturer
+                        result.value = "Success"
+                    } else {
+                        result.value = "Not Exist"
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    result.value = "Error"
+                }
+            })
+        }
+        return Pair(result, uidLecturer)
+    }
+
+    fun addLecturerData(uidLecturer: String?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        val dataUser = DataClassUser(
+            uidLecturer = uidLecturer,
+            uidUser = currentUser
+        )
+        databaseReference.child(currentUser.toString()).setValue(dataUser).addOnCompleteListener {
+            if (it.isSuccessful) {
+                result.value = "Success"
+            } else {
+                result.value = "Fail"
+            }
+        }
+        return result
+    }
+
+    fun editName(nameUser: String?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        val updateChildren = mapOf(
+            "nameUser" to nameUser
+        )
+        databaseReference.child(currentUser.toString()).updateChildren(updateChildren).addOnSuccessListener {
+            result.value = "Success"
+        }.addOnFailureListener {
+            result.value = "Error"
+        }
+
+         return result
+    }
+
+    fun editData(dataUser: DataClassUser?): LiveData<String?> {
+        val result = MutableLiveData<String?>()
+        val currentUser = firebaseAuth.currentUser?.uid
+        val updateChildren = mapOf(
+            "uidMajor" to dataUser?.uidMajor,
+            "uidLevel" to dataUser?.uidLevel,
+            "uidClasses" to dataUser?.uidClasses
+        )
+        databaseReference.child(currentUser.toString()).updateChildren(updateChildren).addOnSuccessListener {
+            result.value = "Success"
+        }.addOnFailureListener {
+            result.value = "Error"
+        }
+
+        return result
     }
 }

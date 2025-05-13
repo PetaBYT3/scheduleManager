@@ -6,31 +6,26 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
-import com.schedule.rt.sync.adapter.AdapterDataClasses
+import com.schedule.rt.sync.adapter.AdapterClasses
 import com.schedule.rt.sync.databinding.FragmentDataClassesBinding
 import com.schedule.rt.sync.dataclass.DataClassClasses
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
-import com.schedule.rt.sync.viewmodel.ViewModelScheduleManager
 
 class FragmentDataClasses() : Fragment() {
 
-    private lateinit var binding: FragmentDataClassesBinding
-
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvClasses: AdapterDataClasses
-
-    private val viewModelScheduleManager : ViewModelScheduleManager by activityViewModels()
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
+    private var _binding: FragmentDataClassesBinding? = null
+    private val binding get() = _binding!!
 
     private val vmLevel: ViewModelLevel by activityViewModels()
     private val vmClasses: ViewModelClasses by activityViewModels()
@@ -43,9 +38,6 @@ class FragmentDataClasses() : Fragment() {
         returnTransition = TransitionUtil.returnTransition()
         exitTransition = TransitionUtil.exitTransition()
         reenterTransition = TransitionUtil.reenterTransition()
-
-        sharedElementEnterTransition = TransitionUtil.sharedElementEnterTransition(requireActivity())
-        sharedElementReturnTransition = TransitionUtil.sharedElementReturnTransition(requireActivity())
     }
 
     override fun onCreateView(
@@ -53,7 +45,7 @@ class FragmentDataClasses() : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataClassesBinding.inflate(inflater, container, false)
+        _binding = FragmentDataClassesBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -64,216 +56,189 @@ class FragmentDataClasses() : Fragment() {
             TransitionUtil.slideUpTransition(binding.nestedScrollView)
         }
 
-        actionBar()
-
-        rvClasses()
-
-    }
-
-    private fun actionBar() {
-        val uidLevel = vmClasses.uidLevel
-        vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
-            binding.clToolBar.title = buildString {
-                append("Level ")
-                append(it?.level)
-            }
-        }
-
         binding.toolBar.setNavigationOnClickListener {
             parentFragmentManager.popBackStack()
+        }
+
+        vmClasses.uidLevelReference.observe(viewLifecycleOwner) {
+            vmLevel.getLevelByUid(it).observe(viewLifecycleOwner) {
+                binding.clToolBar.title = buildString {
+                    append("Level ")
+                    append(it?.level)
+                }
+            }
         }
 
         binding.btnAdd.setOnClickListener {
             addClasses()
         }
+
+        recyclerView()
+
     }
 
-    private fun rvClasses() {
-        recyclerView = binding.rvClasses
-        adapterRvClasses = AdapterDataClasses(vmCourse, viewLifecycleOwner)
-        recyclerView.adapter = adapterRvClasses
+    private fun recyclerView() {
+        val recyclerView: RecyclerView = binding.rvClasses
+        val adapter = AdapterClasses(
+            btnFirst = true,
+            btnSecond = true,
+            btnNext = true,
+            onFirstClick = {
+                val uidClasses = it.uidClasses
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-        vmClasses.getClasses()
-        vmClasses.dataClasses.observe(viewLifecycleOwner) {
-            adapterRvClasses.updateRvClasses(it)
-            if (it.isNotEmpty()) {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.VISIBLE
-            }
-        }
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-        adapterRvClasses.setOnItemClickListener(object : AdapterDataClasses.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val uidMajor = vmClasses.uidMajor
-                val uidLevel = vmClasses.uidLevel
-                val uidClasses = adapterRvClasses.dataClassClasses[position].uidClasses
+                        inputBinding.toolBar.title = "Edit Class"
+                        inputBinding.tiFirst.hint = "Class Name"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
 
-                vmCourse.uidMajor = uidMajor
-                vmCourse.uidLevel = uidLevel
-                vmCourse.uidClasses = uidClasses
+                        vmClasses.getClassesByUid(uidClasses).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.nameClasses.toString())
+                        }
 
-                requireActivity().supportFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    replace(R.id.fragmentContainer, FragmentDataCourse::class.java, null)
-                    addToBackStack(null)
-                }
-            }
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                            val dataClasses = DataClassClasses(
+                                nameClasses = etFirst,
+                                uidClasses = uidClasses
+                            )
 
-            override fun onEditClick(position: Int) {
-                DialogUtil.showBottomSheet1Et(
-                    requireActivity(),
-                    "Edit Class",
-                    "Class Name",
-                    R.drawable.edit,
-                    "Edit"
-                ) { bottomSheetBinding, bottomSheet ->
+                            if (etFirst.isNotEmpty()) {
+                                vmClasses.editClasses(dataClasses).observe(viewLifecycleOwner) {
+                                    when (it) {
+                                        "Success" -> {
+                                            showToastFragment(FragmentToast(R.drawable.check, "Edit Success"))
+                                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        }
 
-                    val uidClasses = adapterRvClasses.dataClassClasses[position].uidClasses.toString()
+                                        "Exist" -> {
+                                            showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
+                                        }
 
-                    vmClasses.getClassesByUid(uidClasses).observe(viewLifecycleOwner) {
-                        bottomSheetBinding.etFirst.setText(it?.nameClasses.toString())
-                    }
-
-                    bottomSheetBinding.btnYes.setOnClickListener {
-                        val etFirst = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
-                        val dataClasses = DataClassClasses(
-                            nameClasses = etFirst,
-                            uidClasses = uidClasses
-                        )
-
-                        if (etFirst.isNotEmpty()) {
-                            vmClasses.editClasses(dataClasses).observe(viewLifecycleOwner) {
-                                when (it) {
-                                    "Success" -> {
-                                        DialogUtil.showToast(
-                                            requireActivity(),
-                                            "Edit Success",
-                                            R.drawable.check
-                                        )
-                                        bottomSheet.dismiss()
-                                    }
-
-                                    "Exist" -> {
-                                        DialogUtil.showToast(
-                                            requireActivity(),
-                                            "Class Exist",
-                                            R.drawable.fail
-                                        )
-                                    }
-
-                                    "Fail" -> {
-                                        DialogUtil.showToast(
-                                            requireActivity(),
-                                            "Edit Failed",
-                                            R.drawable.fail
-                                        )
+                                        "Fail" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Edit Failed"))
+                                        }
                                     }
                                 }
+                            } else {
+                                showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                             }
-                        } else {
-                            DialogUtil.showToast(
-                                requireActivity(),
-                                "Fill All Field",
-                                R.drawable.fail
-                            )
                         }
                     }
                 }
-            }
+                addFragmentWithoutBackStack(fragmentInput)
+            },
+            onSecondClick = {
+                val uidClasses = it.uidClasses
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
 
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Delete Class",
-                    R.drawable.delete,
-                    "Delete",
-                    { bottomSheetBinding, bottomSheet ->
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-                        val uidClasses = adapterRvClasses.dataClassClasses[position].uidClasses.toString()
+                        cardBinding.toolBar.title = "Delete Class"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
 
                         vmClasses.getClassesByUid(uidClasses).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = buildString {
+                            cardBinding.tvTitle.text = buildString {
                                 append("Class ")
                                 append(it?.nameClasses)
                             }
                         }
-                        viewModelScheduleManager.getCourseSize(uidClasses).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvData1.text = buildString {
-                                append(it?.toString())
-                                append(" Course")
-                            }
-                        }
 
-                        bottomSheetBinding.btnYes.setOnClickListener {
+                        cardBinding.btnYes.setOnClickListener {
                             vmClasses.deleteClasses(uidClasses).observe(viewLifecycleOwner) {
                                 when (it) {
                                     "Success" -> {
-                                        DialogUtil.showToast(requireActivity(), "Delete Success", R.drawable.check)
-                                        bottomSheet.dismiss()
+                                        showToastFragment(FragmentToast(R.drawable.check, "Delete Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                     }
                                     "Fail" -> {
-                                        DialogUtil.showToast(requireActivity(), "Delete Failed", R.drawable.fail)
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
                                     }
                                 }
                             }
                         }
                     }
-                )
+                }
+                addFragmentWithoutBackStack(fragmentCard)
+            },
+            onNextClick = {
+                val uidClasses = it.uidClasses
+                vmCourse.uidClassesReference(uidClasses)
+                replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentDataCourse(), "mainContainer")
             }
-        })
+        )
+
+        recyclerView.adapter = adapter
+
+        vmClasses.getClasses().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
+            }
+        }
     }
 
     private fun addClasses() {
-        DialogUtil.showBottomSheet1Et(
-            requireActivity(),
-            "Add Class",
-            "Class Name",
-            R.drawable.add,
-            "Add"
-        ) { bottomSheetBinding, bottomSheet ->
+        val fragmentInput = FragmentInput().apply {
+            onViewCreated = { inputBinding ->
 
-            bottomSheetBinding.btnYes.setOnClickListener {
-                val etFirst = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
-                val dataClasses = DataClassClasses(
-                    nameClasses = etFirst
-                )
+                inputBinding.toolBar.setNavigationOnClickListener {
+                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                }
 
-                if (etFirst.isNotEmpty()) {
-                    vmClasses.addClasses(dataClasses).observe(viewLifecycleOwner) {
-                        when (it) {
-                            "Success" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Add Success",
-                                    R.drawable.check
-                                )
-                                bottomSheet.dismiss()
-                            }
+                inputBinding.toolBar.title = "Add Class"
+                inputBinding.tiFirst.hint = "Class Name"
+                inputBinding.ivYes.setImageResource(R.drawable.add)
+                inputBinding.tvYes.text = "Add"
 
-                            "Exist" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Class Exist",
-                                    R.drawable.fail
-                                )
-                            }
+                inputBinding.btnYes.setOnClickListener {
+                    val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    val dataClasses = DataClassClasses(
+                        nameClasses = etFirst
+                    )
 
-                            "Fail" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Add Failed",
-                                    R.drawable.fail
-                                )
+                    if (etFirst.isNotEmpty()) {
+                        vmClasses.addClasses(dataClasses).observe(viewLifecycleOwner) {
+                            when (it) {
+                                "Success" -> {
+                                    showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                }
+
+                                "Exist" -> {
+                                    showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
+                                }
+
+                                "Fail" -> {
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                }
                             }
                         }
+                    } else {
+                        showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                     }
-                } else {
-                    DialogUtil.showToast(requireActivity(), "Fill All Field", R.drawable.fail)
                 }
             }
         }
+        addFragmentWithoutBackStack(fragmentInput)
+    }
+
+    override fun onDestroyView() {
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        super.onDestroyView()
+        _binding = null
     }
 }

@@ -7,33 +7,34 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
-import com.schedule.rt.sync.adapter.AdapterDataLevel
+import com.schedule.rt.sync.adapter.AdapterLevel
 import com.schedule.rt.sync.databinding.FragmentDataLevelBinding
 import com.schedule.rt.sync.dataclass.DataClassLevel
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.function.capitalizeAfterDot
+import com.schedule.rt.sync.function.capitalizeEachWord
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
-import com.schedule.rt.sync.viewmodel.ViewModelScheduleManager
+import com.schedule.rt.sync.viewmodel.ViewModelMajor
 
 
 class FragmentDataLevel : Fragment() {
 
-    private lateinit var binding: FragmentDataLevelBinding
+    private var _binding: FragmentDataLevelBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvLevel: AdapterDataLevel
-
-    private val viewModelScheduleManager : ViewModelScheduleManager by activityViewModels()
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
-
+    private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLevel: ViewModelLevel by activityViewModels()
     private val vmClasses: ViewModelClasses by activityViewModels()
+    private val vmCourse: ViewModelCourse by activityViewModels()
 
     private var search = false
 
@@ -51,14 +52,30 @@ class FragmentDataLevel : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataLevelBinding.inflate(inflater, container, false)
+        _binding = FragmentDataLevelBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        actionBar()
+        binding.nestedScrollView.post {
+            TransitionUtil.slideUpTransition(binding.nestedScrollView)
+        }
+
+        binding.toolBar.setNavigationOnClickListener {
+            (requireActivity() as ActivityMain).btnDrawer()
+        }
+
+        vmLevel.uidMajorReference.observe(viewLifecycleOwner) {
+            vmMajor.getMajorByUid(it).observe(viewLifecycleOwner) {
+                binding.clToolBar.title = it?.nameMajor
+            }
+        }
+
+        binding.btnAdd.setOnClickListener {
+            addLevel()
+        }
 
 //        binding.btnSearch.setOnClickListener {
 //            if (search) {
@@ -81,238 +98,192 @@ class FragmentDataLevel : Fragment() {
 //            }
 //        )
 
-        rvLevel()
+        recyclerView()
     }
 
-    private fun actionBar() {
-        binding.toolBar.setNavigationOnClickListener {
-            (requireActivity() as ActivityMain).btnDrawer()
-        }
+    private fun recyclerView() {
+        val recyclerView: RecyclerView = binding.rvLevel
+        val adapter = AdapterLevel(
+            btnFirst = true,
+            btnSecond = true,
+            btnNext = true,
+            onFirstClick = {
+                val uidLevel = it.uidLevel
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-        viewModelScheduleManager.getMajorByUid().observe(viewLifecycleOwner) {
-            binding.clToolBar.title = it?.nameMajor
-        }
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-        binding.btnAdd.setOnClickListener {
-            addLevel()
-        }
-    }
+                        inputBinding.tiSecond.visibility = View.VISIBLE
 
-//    fun Fragment.forceHideKeyboard() {
-//        val view = view?.rootView ?: View(requireContext())
-//
-//        // Cara 1: InputMethodManager
-//        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-//        imm.hideSoftInputFromWindow(view.windowToken, 0)
-//
-//        // Cara 2: WindowInsetsController (Android 11+)
-//        ViewCompat.getWindowInsetsController(view)?.hide(WindowInsetsCompat.Type.ime())
-//    }
+                        inputBinding.toolBar.title = "Edit Level"
+                        inputBinding.tiFirst.hint = "Level"
+                        inputBinding.tiSecond.hint = "Semester"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
 
-    private fun rvLevel() {
-        binding.rvLevel.post {
-            TransitionUtil.slideUpTransition(binding.rvLevel)
-        }
+                        inputBinding.etFirst.inputType = InputType.TYPE_CLASS_NUMBER
+                        inputBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
 
-        recyclerView = binding.rvLevel
-        adapterRvLevel = AdapterDataLevel(vmClasses, viewLifecycleOwner)
-        recyclerView.adapter = adapterRvLevel
+                        vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.level)
+                            inputBinding.etSecond.setText(it?.semester)
+                        }
 
-        vmLevel.getLevel()
-        vmLevel.dataLevel.observe(viewLifecycleOwner) {
-            adapterRvLevel.updateRvLevel(it)
-            if (it.isNotEmpty()) {
-                binding.pbRvLevel.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
-                binding.pbRvLevel.visibility = View.GONE
-                binding.layoutNoData.visibility = View.VISIBLE
-            }
-        }
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString()
+                            val etSecond = inputBinding.etSecond.text.toString()
+                            val dataLevel = DataClassLevel(
+                                level = etFirst,
+                                semester = etSecond,
+                                uidLevel = uidLevel
+                            )
 
-        adapterRvLevel.setOnItemClickListener(object : AdapterDataLevel.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val uidMajor = vmLevel.uidMajor
-                val uidLevel = adapterRvLevel.dataClassLevel[position].uidLevel
+                            if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
+                                vmLevel.editLevel(dataLevel).observe(viewLifecycleOwner) {
+                                    when (it) {
+                                        "Success" -> {
+                                            showToastFragment(FragmentToast(R.drawable.check, "Edit Success"))
+                                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        }
+                                        "Exist" -> {
+                                            showToastFragment(FragmentToast(R.drawable.copy, "Level Already Exist"))
+                                        }
 
-                vmClasses.uidMajor = uidMajor
-                vmClasses.uidLevel = uidLevel
-
-                requireActivity().supportFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    replace(R.id.fragmentContainer, FragmentDataClasses::class.java, null)
-                    addToBackStack(null)
-                }
-            }
-
-            override fun onEditClick(position: Int) {
-                DialogUtil.showBottomSheet2Et(
-                    requireActivity(),
-                    "Edit Level",
-                    "Level",
-                    "Semester",
-                    R.drawable.edit,
-                    "Edit"
-                ) { bottomSheetBinding, bottomSheet ->
-
-                    val uidLevel = adapterRvLevel.dataClassLevel[position].uidLevel
-
-                    bottomSheetBinding.etFirst.inputType = InputType.TYPE_CLASS_NUMBER
-                    bottomSheetBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
-
-                    vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
-                        bottomSheetBinding.etFirst.setText(it?.level.toString())
-                        bottomSheetBinding.etSecond.setText(it?.semester.toString())
-                    }
-
-                    bottomSheetBinding.btnYes.setOnClickListener {
-                        val etFirst = bottomSheetBinding.etFirst.text.toString()
-                        val etSecond = bottomSheetBinding.etSecond.text.toString()
-                        val dataLevel = DataClassLevel(
-                            level = etFirst,
-                            semester = etSecond,
-                            uidLevel = uidLevel
-                        )
-
-                        if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
-                            vmLevel.editLevel(dataLevel).observe(viewLifecycleOwner) {
-                                when (it) {
-                                    "Success" -> {
-                                        DialogUtil.showToast(
-                                            requireActivity(),
-                                            "Edit Success",
-                                            R.drawable.check
-                                        )
-                                        bottomSheet.dismiss()
-                                    }
-
-                                    "Exist" -> {
-                                        DialogUtil.showPopUp(
-                                            requireActivity(),
-                                            "Level Already Exist",
-                                            bottomSheetBinding.root
-                                        )
-                                    }
-
-                                    "Fail" -> {
-                                        DialogUtil.showToast(
-                                            requireActivity(),
-                                            "Edit Failed",
-                                            R.drawable.fail
-                                        )
+                                        "Fail" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Edit Failed"))
+                                        }
                                     }
                                 }
+                            } else {
+                                showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                             }
-                        } else {
-                            DialogUtil.showToast(
-                                requireActivity(),
-                                "Fill All Field",
-                                R.drawable.fail
-                            )
                         }
                     }
                 }
-            }
+                addFragmentWithoutBackStack(fragmentInput)
+            },
+            onSecondClick = {
+                val uidLevel = it.uidLevel
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
 
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Delete Level",
-                    R.drawable.delete,
-                    "Delete",
-                    { bottomSheetBinding, bottomSheet ->
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-                        val uidLevel = adapterRvLevel.dataClassLevel[position].uidLevel
+                        cardBinding.toolBar.title = "Delete Level"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
 
                         vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = buildString {
+                            cardBinding.tvTitle.text = buildString {
                                 append("Level ")
                                 append(it?.level)
                             }
-                            bottomSheetBinding.tvData1.text = buildString {
+
+                            cardBinding.tvData1.text = buildString {
                                 append("Semester ")
                                 append(it?.semester)
                             }
                         }
 
-                        bottomSheetBinding.tvData2.visibility = View.VISIBLE
-                        viewModelScheduleManager.getClassesSize(uidLevel).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvData2.text = buildString {
-                                append(it?.toString())
-                                append(" Classes")
-                            }
-                        }
-
-                        bottomSheetBinding.btnYes.setOnClickListener {
+                        cardBinding.btnYes.setOnClickListener {
                             vmLevel.deleteLevel(uidLevel).observe(viewLifecycleOwner) {
                                 when (it) {
                                     "Success" -> {
-                                        DialogUtil.showToast(requireActivity(), "Delete Success", R.drawable.check)
-                                        bottomSheet.dismiss()
+                                        showToastFragment(FragmentToast(R.drawable.check, "Delete Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                     }
                                     "Fail" -> {
-                                        DialogUtil.showToast(requireActivity(), "Delete Failed", R.drawable.fail)
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
                                     }
                                 }
                             }
                         }
                     }
-                )
+                }
+                addFragmentWithoutBackStack(fragmentCard)
+            },
+            onNextClick = {
+                val uidLevel = it.uidLevel
+                vmClasses.uidLevelReference(uidLevel)
+                vmCourse.uidLevelReference(uidLevel)
+                replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentDataClasses(), "mainContainer")
             }
-        })
+        )
+        recyclerView.adapter = adapter
+
+        vmLevel.getLevel().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
+                binding.pbRvLevel.visibility = View.GONE
+                binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRvLevel.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
+            }
+        }
     }
 
     private fun addLevel() {
-        DialogUtil.showBottomSheet2Et(
-            requireActivity(),
-            "Add Level",
-            "Level",
-            "Semester",
-            R.drawable.add,
-            "Add"
-        ) { bottomSheetBinding, bottomSheet ->
+        val fragmentInput = FragmentInput().apply {
+            onViewCreated = { inputBinding ->
 
-            bottomSheetBinding.etFirst.inputType = InputType.TYPE_CLASS_NUMBER
-            bottomSheetBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
+                inputBinding.toolBar.setNavigationOnClickListener {
+                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                }
 
-            bottomSheetBinding.btnYes.setOnClickListener {
-                val etFirst = bottomSheetBinding.etFirst.text.toString()
-                val etSecond = bottomSheetBinding.etSecond.text.toString()
+                inputBinding.tiSecond.visibility = View.VISIBLE
 
-                if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
-                    val dataLevel = DataClassLevel(etFirst, etSecond)
-                    vmLevel.addLevel(dataLevel).observe(viewLifecycleOwner) {
-                        when (it) {
-                            "Success" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Add Success",
-                                    R.drawable.check
-                                )
-                                bottomSheet.dismiss()
+                inputBinding.toolBar.title = "Add Level"
+                inputBinding.tiFirst.hint = "Level"
+                inputBinding.tiSecond.hint = "Semester"
+                inputBinding.ivYes.setImageResource(R.drawable.add)
+                inputBinding.tvYes.text = "Add"
+
+                inputBinding.etFirst.inputType = InputType.TYPE_CLASS_NUMBER
+                inputBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
+
+                inputBinding.btnYes.setOnClickListener {
+                    val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    val etSecond = inputBinding.etSecond.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
+                        val dataLevel = DataClassLevel(
+                            level = etFirst,
+                            semester = etSecond
+                        )
+
+                        vmLevel.addLevel(dataLevel).observe(viewLifecycleOwner) {
+                            inputBinding.pbYes.visibility = View.VISIBLE
+                            when (it) {
+                                "Success" -> {
+                                    showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                }
+                                "Exist" -> {
+                                    showToastFragment(FragmentToast(R.drawable.copy, "Level Already Exist"))
+                                }
+                                "Fail" -> {
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                }
                             }
-
-                            "Exist" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Level Already Exist",
-                                    R.drawable.copy
-                                )
-                            }
-
-                            "Fail" -> {
-                                DialogUtil.showToast(
-                                    requireActivity(),
-                                    "Add Failed",
-                                    R.drawable.fail
-                                )
-                            }
+                            inputBinding.pbYes.visibility = View.INVISIBLE
                         }
+                    } else {
+                        showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                     }
-                } else {
-                    DialogUtil.showToast(requireActivity(), "Fill All Field", R.drawable.fail)
                 }
             }
         }
+        addFragmentWithoutBackStack(fragmentInput)
+    }
+
+    override fun onDestroyView() {
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        super.onDestroyView()
+        _binding = null
     }
 }

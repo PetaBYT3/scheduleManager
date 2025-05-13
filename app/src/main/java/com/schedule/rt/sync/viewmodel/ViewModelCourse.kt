@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,15 +14,36 @@ class ViewModelCourse: ViewModel() {
 
     private val databaseReference = FirebaseDatabase.getInstance().getReference("courses")
 
-    var uidMajor: String? = null
-    var uidLevel: String? = null
-    var uidClasses: String? = null
+    private val _uidCourse = MutableLiveData<String?>()
+    val uidCourse: LiveData<String?> get() = _uidCourse
 
-    private val _dataCourse = MutableLiveData<List<DataClassCourse>>()
-    val dataCourse: LiveData<List<DataClassCourse>> get() =  _dataCourse
+    fun sendCourseUid(uidCourse: String?) {
+        _uidCourse.value = uidCourse
+    }
 
-    fun getCourse() {
-        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
+    private val _uidMajorReference = MutableLiveData<String?>()
+    val uidMajorReference: LiveData<String?> get() = _uidMajorReference
+
+    fun uidMajorReference(uidMajor: String?) {
+        _uidMajorReference.value = uidMajor
+    }
+
+    private val _uidLevelReference = MutableLiveData<String?>()
+    val uidLevelReference: LiveData<String?> = _uidLevelReference
+
+    fun uidLevelReference(uidLevel: String?) {
+        _uidLevelReference.value = uidLevel
+    }
+    private val _uidClassesReference = MutableLiveData<String?>()
+    val uidClassesReference: LiveData<String?> get() = _uidClassesReference
+
+    fun uidClassesReference(uidClasses: String?) {
+        _uidClassesReference.value = uidClasses
+    }
+
+    fun getCourse(): LiveData<List<DataClassCourse>> {
+        val dataCourse = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClassesReference.value)
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val listCourse = mutableListOf<DataClassCourse>()
@@ -29,13 +51,85 @@ class ViewModelCourse: ViewModel() {
                     val getCourse = dataSnapshot.getValue(DataClassCourse::class.java)
                     getCourse?.let { listCourse.add(it) }
                 }
-                _dataCourse.value = listCourse
+                dataCourse.value = listCourse
+                Log.d("dataCourse", dataCourse.value.toString())
             }
 
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }
         })
+        return dataCourse
+    }
+
+    fun getCourseByLecturer(uidLecturer: String?) : LiveData<List<DataClassCourse>> {
+        val dataCourse = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidLecturer").equalTo(uidLecturer)
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listCourse = mutableListOf<DataClassCourse>()
+                for (dataSnapshot in snapshot.children) {
+                    val getCourse = dataSnapshot.getValue(DataClassCourse::class.java)
+                    if (getCourse?.uidLecturer == uidLecturer) {
+                        getCourse?.let { listCourse.add(it) }
+                    }
+                }
+                dataCourse.value = listCourse
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return dataCourse
+    }
+
+    fun getCourseByLecturerSchedule(uidLecturer: String?, day: String?) : LiveData<List<DataClassCourse>> {
+        val dataCourse = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidLecturer").equalTo(uidLecturer)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listCourse = mutableListOf<DataClassCourse>()
+                for (dataSnapshot in snapshot.children) {
+                    val getCourse = dataSnapshot.getValue(DataClassCourse::class.java)
+                    val getDay = getCourse?.day
+                    if (getDay == day) {
+                        getCourse?.let { listCourse.add(it) }
+                    }
+                }
+                dataCourse.value = listCourse
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return dataCourse
+    }
+
+    fun getCourseByClassSchedule(uidClasses: String?, day: String?) : LiveData<List<DataClassCourse>> {
+        val dataCourse = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listCourse = mutableListOf<DataClassCourse>()
+                for (dataSnapshot in snapshot.children) {
+                    val getCourse = dataSnapshot.getValue(DataClassCourse::class.java)
+                    val getDay = getCourse?.day
+                    if (getDay == day) {
+                        getCourse?.let { listCourse.add(it) }
+                    }
+                }
+                dataCourse.value = listCourse
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return  dataCourse
     }
 
     fun getCourseByUid(uidCourse : String): LiveData<DataClassCourse?> {
@@ -58,11 +152,11 @@ class ViewModelCourse: ViewModel() {
         val addCourseStatus = MutableLiveData<String?>()
         val uidCourse = databaseReference.push().key.toString()
         val nameCourse = dataClassCourse.nameCourse
-        dataClassCourse.uidMajor = uidMajor
-        dataClassCourse.uidLevel = uidLevel
-        dataClassCourse.uidClasses = uidClasses
+        dataClassCourse.uidMajor = uidMajorReference.value
+        dataClassCourse.uidLevel = uidLevelReference.value
+        dataClassCourse.uidClasses = uidClassesReference.value
         dataClassCourse.uidCourse = uidCourse
-        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
+        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClassesReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false
@@ -97,7 +191,7 @@ class ViewModelCourse: ViewModel() {
         val uidCourse = dataClassCourse.uidCourse.toString()
         val nameCourse = dataClassCourse.nameCourse
         val uidLecturer = dataClassCourse.uidLecturer
-        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
+        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClassesReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false
@@ -112,15 +206,27 @@ class ViewModelCourse: ViewModel() {
                 if (isExist == true) {
                     editCourseStatus.value = "Exist"
                 } else {
-                    val updateChild = mapOf(
-                        "nameCourse" to nameCourse,
-                        "sksCourse" to dataClassCourse.sksCourse,
-                        "uidLecturer" to uidLecturer
-                    )
-                    databaseReference.child(uidCourse).updateChildren(updateChild).addOnSuccessListener {
-                        editCourseStatus.value = "Success"
-                    }.addOnFailureListener {
-                        editCourseStatus.value = "Fail"
+                    if (uidLecturer != null) {
+                        val updateChild = mapOf(
+                            "nameCourse" to nameCourse,
+                            "sksCourse" to dataClassCourse.sksCourse,
+                            "uidLecturer" to uidLecturer
+                        )
+                        databaseReference.child(uidCourse).updateChildren(updateChild).addOnSuccessListener {
+                            editCourseStatus.value = "Success"
+                        }.addOnFailureListener {
+                            editCourseStatus.value = "Fail"
+                        }
+                    } else {
+                        val updateChild = mapOf(
+                            "nameCourse" to nameCourse,
+                            "sksCourse" to dataClassCourse.sksCourse
+                        )
+                        databaseReference.child(uidCourse).updateChildren(updateChild).addOnSuccessListener {
+                            editCourseStatus.value = "Success"
+                        }.addOnFailureListener {
+                            editCourseStatus.value = "Fail"
+                        }
                     }
                 }
             }

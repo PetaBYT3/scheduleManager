@@ -6,24 +6,23 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.adapter.AdapterRoom
 import com.schedule.rt.sync.databinding.FragmentRoomBinding
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 import com.schedule.rt.sync.viewmodel.ViewModelSchedule
 
-class FragmentRoom : Fragment() {
+class FragmentRoom(
+    var btnAddSchedule: Boolean? = null,
+    var btnEditSchedule: Boolean? = null
+) : Fragment() {
 
-    private lateinit var binding: FragmentRoomBinding
-
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvRoom: AdapterRoom
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
+    private var _binding: FragmentRoomBinding? = null
+    private val binding get() = _binding!!
 
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom: ViewModelRoom by activityViewModels()
@@ -43,7 +42,7 @@ class FragmentRoom : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentRoomBinding.inflate(inflater, container, false)
+        _binding = FragmentRoomBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -54,13 +53,7 @@ class FragmentRoom : Fragment() {
             TransitionUtil.slideUpTransition(binding.nestedScrollView)
         }
 
-        rvRoom()
-
-        actionBar()
-    }
-
-    private fun actionBar() {
-        val uidBuilding = vmRoom.uidBuilding
+        val uidBuilding = vmRoom.uidBuildingReference.value
         vmBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
             binding.clToolBar.title = buildString {
                 append("Building ")
@@ -71,38 +64,41 @@ class FragmentRoom : Fragment() {
         binding.toolBar.setNavigationOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
+
+        rvRoom()
+
     }
 
     private fun rvRoom() {
-        recyclerView = binding.rvRoom
-        adapterRvRoom = AdapterRoom()
-        recyclerView.adapter = adapterRvRoom
+        val recyclerView: RecyclerView = binding.rvRoom
+        val adapter = AdapterRoom(
+            btnFirst = false,
+            btnSecond = false,
+            btnNext = true,
+            onNextClick = {
+                val uidRoom = it.uidRoom
+                vmSchedule.uidRoomReference(uidRoom)
+                val fragmentDataSchedule = FragmentDataSchedule(btnAddSchedule = btnAddSchedule, btnEditSchedule = btnEditSchedule)
+                replaceFragmentWithBackStack(R.id.mainFragmentContainer, fragmentDataSchedule, null)
+            }
+        )
 
-        vmRoom.getRoom()
-        vmRoom.dataRoom.observe(viewLifecycleOwner) {
-            adapterRvRoom.updateRvRoom(it)
-            if (it.isNotEmpty()) {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
+        recyclerView.adapter = adapter
+
+        vmRoom.getRoom().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
                 binding.pbRv.visibility = View.GONE
                 binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
             }
         }
+    }
 
-        adapterRvRoom.setOnItemClickListener(object : AdapterRoom.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val uidRoom = adapterRvRoom.dataClassRoom[position].uidRoom
-
-                vmRoom.uidRoom = uidRoom
-                vmSchedule.uidRoom = uidRoom
-
-                requireActivity().supportFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    replace(R.id.fragmentContainer, FragmentDataDay::class.java, null)
-                    addToBackStack(null)
-                }
-            }
-        })
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

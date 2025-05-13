@@ -6,28 +6,28 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
-import com.schedule.rt.sync.adapter.AdapterDataMajor
+import com.schedule.rt.sync.adapter.AdapterMajor
 import com.schedule.rt.sync.databinding.FragmentDataMajorBinding
 import com.schedule.rt.sync.dataclass.DataClassMajor
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
+import com.schedule.rt.sync.viewmodel.ViewModelData
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
 
 class FragmentDataMajor : Fragment() {
 
-    private lateinit var binding: FragmentDataMajorBinding
+    private var _binding: FragmentDataMajorBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvMajor: AdapterDataMajor
-
-    private val viewModelAdministrator: ViewModelAdministrator by activityViewModels()
-    private val viewModelMajor: ViewModelMajor by activityViewModels()
+    private val vmData: ViewModelData by activityViewModels()
+    private val vmMajor: ViewModelMajor by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +43,7 @@ class FragmentDataMajor : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataMajorBinding.inflate(inflater, container, false)
+        _binding = FragmentDataMajorBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -71,177 +71,166 @@ class FragmentDataMajor : Fragment() {
     }
 
     private fun rvMajor() {
-        recyclerView = binding.rvMajor
-        adapterRvMajor = AdapterDataMajor(viewModelAdministrator, viewLifecycleOwner)
-        recyclerView.adapter = adapterRvMajor
+        val recyclerView: RecyclerView = binding.rvMajor
+        val adapter = AdapterMajor(
+            btnFirst = true,
+            btnSecond = true,
+            btnNext = true,
+            onFirstClick = {
+                val uidMajor = it.uidMajor
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-        viewModelMajor.getMajors()
-        viewModelMajor.dataMajor.observe(viewLifecycleOwner) {
-            adapterRvMajor.updateRvMajor(it)
-            if (it.isNotEmpty()) {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
+
+                        inputBinding.toolBar.title = "Edit Major"
+                        inputBinding.tiFirst.hint = "Major Name"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
+
+                        vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.nameMajor)
+                        }
+
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                            val dataMajor = DataClassMajor(
+                                nameMajor = etFirst,
+                                uidMajor = uidMajor
+                            )
+
+                            if (etFirst.isNotEmpty()) {
+                                vmMajor.editMajor(dataMajor).observe(viewLifecycleOwner) {
+                                    when (it) {
+                                        "Success" -> {
+                                            showToastFragment(FragmentToast(R.drawable.check, "Edit Success"))
+                                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        }
+                                        "Exist" -> {
+                                            showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
+                                        }
+                                        "Fail" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Edit Failed"))
+                                        }
+                                        "Error" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
+                                        }
+                                    }
+                                }
+                            } else {
+                                showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
+                            }
+                        }
+                    }
+                }
+                addFragmentWithoutBackStack(fragmentInput)
+            },
+            onSecondClick = {
+                val uidMajor = it.uidMajor
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
+
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
+
+                        cardBinding.toolBar.title = "Delete Major"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
+
+                        vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
+                            cardBinding.tvTitle.text = it?.nameMajor
+                        }
+
+                        cardBinding.btnYes.setOnClickListener {
+                            vmMajor.deleteMajor(uidMajor).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Delete Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    }
+                                    "Fail" -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                addFragmentWithoutBackStack(fragmentCard)
+            },
+            onNextClick = {
+                val uidMajor = it.uidMajor
+                vmData.sendUidMajor(uidMajor.toString())
+                replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentDataManager(), null)
+            }
+        )
+
+        recyclerView.adapter = adapter
+
+        vmMajor.getMajors().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
                 binding.pbRv.visibility = View.GONE
                 binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
             }
         }
-
-        adapterRvMajor.setOnItemClickListener(object : AdapterDataMajor.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val uidMajor = adapterRvMajor.dataClassMajor[position].uidMajor
-                viewModelAdministrator.uidMajor = uidMajor
-                requireActivity().supportFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    replace(R.id.fragmentContainer, FragmentDataManager::class.java, null)
-                    addToBackStack(null)
-                }
-            }
-
-            override fun onEditClick(position: Int) {
-                DialogUtil.showBottomSheet1Et(
-                    requireActivity(),
-                    "Add Major",
-                    "Name Major",
-                    R.drawable.edit,
-                    "Edit"
-                ) { bottomSheetBinding, bottomSheet ->
-
-                    val uidMajor = adapterRvMajor.dataClassMajor[position].uidMajor
-                    viewModelMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
-                        bottomSheetBinding.etFirst.setText(it?.nameMajor)
-                    }
-
-                    bottomSheetBinding.btnYes.setOnClickListener {
-                        val nameMajor = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
-                        val dataMajor = DataClassMajor(nameMajor = nameMajor, uidMajor = uidMajor)
-
-                        if (nameMajor.isNotEmpty()) {
-                            viewModelMajor.editMajor(dataMajor).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Success",
-                                                R.drawable.check
-                                            )
-                                            bottomSheet.dismiss()
-                                        }
-
-                                        "Exist" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Exist",
-                                                R.drawable.warning
-                                            )
-                                        }
-
-                                        "Fail" -> {
-                                            DialogUtil.showToast(
-                                                requireActivity(),
-                                                "Fail",
-                                                R.drawable.warning
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                        }
-                    }
-                }
-            }
-
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Delete Major",
-                    R.drawable.delete,
-                    "Delete",
-                    { bottomSheetBinding, bottomSheet ->
-
-                        val uidMajor = adapterRvMajor.dataClassMajor[position].uidMajor
-                        viewModelMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = it?.nameMajor
-                        }
-                        viewModelAdministrator.getManagerSize(uidMajor).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvData1.text = buildString {
-                                append(it?.toString())
-                                append(" Manager")
-                            }
-                        }
-
-                        bottomSheetBinding.btnYes.setOnClickListener {
-                            viewModelMajor.deleteMajor(uidMajor).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(requireActivity(), "Success", R.drawable.check)
-                                            bottomSheet.dismiss()
-                                        }
-                                        "Fail" -> {
-                                            DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                )
-            }
-        })
     }
 
     private fun addMajor() {
-        DialogUtil.showBottomSheet1Et(
-            requireActivity(),
-            "Add Major",
-            "Name Major",
-            R.drawable.add,
-            "Add"
-        ) { bottomSheetBinding, bottomSheet ->
+        val fragmentInput = FragmentInput().apply {
+            onViewCreated = { inputBinding ->
 
-            bottomSheetBinding.btnYes.setOnClickListener {
-                val nameMajor = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
-                val dataMajor = DataClassMajor(nameMajor = nameMajor)
+                inputBinding.toolBar.setNavigationOnClickListener {
+                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                }
 
-                if (nameMajor.isNotEmpty()) {
-                    viewModelMajor.addMajor(dataMajor).observe(viewLifecycleOwner) {
-                        if (it != null) {
+                inputBinding.toolBar.title = "Add Major"
+                inputBinding.tiFirst.hint = "Major Name"
+                inputBinding.ivYes.setImageResource(R.drawable.add)
+                inputBinding.tvYes.text = "Add"
+
+                inputBinding.btnYes.setOnClickListener {
+                    val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    val dataMajor = DataClassMajor(
+                        nameMajor = etFirst
+                    )
+
+                    if (etFirst.isNotEmpty()) {
+                        vmMajor.addMajor(dataMajor).observe(viewLifecycleOwner) {
                             when (it) {
                                 "Success" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Success",
-                                        R.drawable.check
-                                    )
-                                    bottomSheet.dismiss()
+                                    showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                 }
-
                                 "Exist" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Exist",
-                                        R.drawable.warning
-                                    )
+                                    showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
                                 }
-
                                 "Fail" -> {
-                                    DialogUtil.showToast(
-                                        requireActivity(),
-                                        "Fail",
-                                        R.drawable.warning
-                                    )
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                }
+                                "Error" -> {
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
                                 }
                             }
                         }
+                    } else {
+                        showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
                     }
-                } else {
-                    DialogUtil.showToast(requireActivity(), "Fill All Field", R.drawable.warning)
                 }
             }
         }
+        addFragmentWithoutBackStack(fragmentInput)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        _binding = null
     }
 }

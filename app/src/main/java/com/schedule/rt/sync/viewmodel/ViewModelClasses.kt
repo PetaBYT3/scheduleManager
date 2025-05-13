@@ -13,14 +13,23 @@ class ViewModelClasses: ViewModel() {
 
     private val databaseReference = FirebaseDatabase.getInstance().getReference("classes")
 
-    var uidMajor: String? = null
-    var uidLevel: String? = null
+    private val _uidMajorReference = MutableLiveData<String?>()
+    val uidMajorReference: LiveData<String?> get() = _uidMajorReference
 
-    private val _dataClasses = MutableLiveData<List<DataClassClasses>>()
-    val dataClasses: LiveData<List<DataClassClasses>> = _dataClasses
+    fun uidMajorReference(uidMajor: String?) {
+        _uidMajorReference.value = uidMajor
+    }
 
-    fun getClasses() {
-        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+    private val _uidLevelReference = MutableLiveData<String?>()
+    val uidLevelReference: LiveData<String?> = _uidLevelReference
+
+    fun uidLevelReference(uidLevel: String?) {
+        _uidLevelReference.value = uidLevel
+    }
+
+    fun getClasses(): LiveData<List<DataClassClasses>> {
+        val dataClasses = MutableLiveData<List<DataClassClasses>>()
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevelReference.value)
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val listClasses = mutableListOf<DataClassClasses>()
@@ -28,13 +37,14 @@ class ViewModelClasses: ViewModel() {
                     val getClasses = dataSnapshot.getValue(DataClassClasses::class.java)
                     getClasses?.let { listClasses.add(it) }
                 }
-                _dataClasses.value = listClasses
+                dataClasses.value = listClasses
             }
 
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }
         })
+        return dataClasses
     }
 
     fun getClassesByUid(uidClasses: String?): LiveData<DataClassClasses?> {
@@ -58,10 +68,10 @@ class ViewModelClasses: ViewModel() {
         val addClassesStatus = MutableLiveData<String?>()
         val uidClasses = databaseReference.push().key.toString()
         val nameClasses = dataClassClasses.nameClasses
-        dataClassClasses.uidMajor = uidMajor
-        dataClassClasses.uidLevel = uidLevel
+        dataClassClasses.uidMajor = uidMajorReference.value
+        dataClassClasses.uidLevel = uidLevelReference.value
         dataClassClasses.uidClasses = uidClasses
-        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevelReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false
@@ -95,7 +105,7 @@ class ViewModelClasses: ViewModel() {
         val editClassesStatus = MutableLiveData<String?>()
         val uidClasses = dataClassClasses.uidClasses.toString()
         val nameClasses = dataClassClasses.nameClasses.toString()
-        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevelReference.value)
         ref.addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
                 var isExist = false

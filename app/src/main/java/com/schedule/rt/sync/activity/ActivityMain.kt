@@ -1,11 +1,8 @@
 package com.schedule.rt.sync.activity
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.widget.ImageView
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -15,35 +12,36 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
-import com.google.firebase.auth.FirebaseAuth
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.databinding.ActivityMainBinding
 import com.schedule.rt.sync.fragment.FragmentAdministrator
 import com.schedule.rt.sync.fragment.FragmentDataLevel
 import com.schedule.rt.sync.fragment.FragmentHome
 import com.schedule.rt.sync.fragment.FragmentNotification
-import com.schedule.rt.sync.objectsingleton.DialogUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
+import com.schedule.rt.sync.fragment.FragmentProfile
+import com.schedule.rt.sync.fragment.FragmentSettings
+import com.schedule.rt.sync.service.ForegroundService
+import com.schedule.rt.sync.viewmodel.ViewModelClasses
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
+import com.schedule.rt.sync.viewmodel.ViewModelLecturer
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
-import com.schedule.rt.sync.viewmodel.ViewModelScheduleManager
+import com.schedule.rt.sync.viewmodel.ViewModelMajor
 import com.schedule.rt.sync.viewmodel.ViewModelUser
 
 class ActivityMain : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    private lateinit var firebaseAuth: FirebaseAuth
-
     private lateinit var drawerLayout: DrawerLayout
 
-    private val viewModelUser : ViewModelUser by viewModels()
-    private val viewModelScheduleManager : ViewModelScheduleManager by viewModels()
-    private val viewModelAdministrator: ViewModelAdministrator by viewModels()
-    private val viewModelLevel: ViewModelLevel by viewModels()
-
-    private var backPressedOnce = false
-    private val handler = Handler(Looper.getMainLooper())
+    private val vmUser : ViewModelUser by viewModels()
+    private val vmLecturer : ViewModelLecturer by viewModels()
+    private val vmMajor : ViewModelMajor by viewModels()
+    private val vmLevel: ViewModelLevel by viewModels()
+    private val vmClass: ViewModelClasses by viewModels()
+    private val vmCourse: ViewModelCourse by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,42 +56,59 @@ class ActivityMain : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             supportFragmentManager.commit {
-                setReorderingAllowed(true)
                 replaceFragment(FragmentHome(), R.id.btnHome)
             }
         }
 
-        firebaseAuth = FirebaseAuth.getInstance()
 
         drawerLayout = binding.dlActivityMain
         val navigationView: NavigationView = binding.navigationView
         val headerView = navigationView.getHeaderView(0)
-        val btnCloseDrawer: ImageView = headerView.findViewById(R.id.btnCloseDrawer)
+        val btnCloseDrawer: MaterialCardView = headerView.findViewById(R.id.btnCloseDrawer)
 
         val menu = navigationView.menu
         val btnAdministrator = menu.findItem(R.id.btnAdministrator)
         val btnScheduleManager = menu.findItem(R.id.btnScheduleManager)
 
-        viewModelUser.dataLecturer.observe(this) {
-            if (it != null) {
-                viewModelScheduleManager.uidMajor = it.uidMajorManager
-                viewModelAdministrator.uidMajorSchedule = it.uidMajorManager
-                viewModelLevel.uidMajor = it.uidMajorManager
+        vmUser.getUser().observe(this) {
+            val uidLecturer = it?.uidLecturer
 
-                if (it.administratorAccess == "True") {
-                    btnAdministrator.isVisible = true
-                    viewModelScheduleManager.getMajorByUid().observe(this) {
-                        btnScheduleManager.title = it?.nameMajor
+            val serviceIntent = Intent(this, ForegroundService::class.java)
+            serviceIntent.putExtra("uidClasses", it?.uidClasses)
+            serviceIntent.putExtra("uidLecturer", it?.uidLecturer)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+
+            if (uidLecturer != null) {
+                vmLecturer.getLecturerByUid(uidLecturer).observe(this) {
+                    val uidMajor = it?.uidMajorManager
+                    val administratorAccess = it?.administratorAccess.toString()
+
+                    if (administratorAccess == "True") {
+                        btnAdministrator.isVisible = true
+                    } else {
+                        btnAdministrator.isVisible = false
                     }
-                } else if (it.administratorAccess == "False") {
-                    btnAdministrator.isVisible = false
-                }
 
-                if (it.uidMajorManager != null) {
-                    btnScheduleManager.isVisible = true
-                } else if (it.uidMajorManager == null) {
-                    btnScheduleManager.isVisible = false
+                    if (uidMajor != null) {
+                        vmMajor.getMajorByUid(uidMajor).observe(this) {
+                            vmLevel.uidMajorReference(uidMajor)
+                            vmClass.uidMajorReference(uidMajor)
+                            vmCourse.uidMajorReference(uidMajor)
+
+                            btnScheduleManager.title = it?.nameMajor
+                            btnScheduleManager.isVisible = true
+                        }
+                    } else {
+                        btnScheduleManager.isVisible = false
+                    }
                 }
+            } else {
+                btnAdministrator.isVisible = false
+                btnScheduleManager.isVisible = false
             }
         }
 
@@ -113,6 +128,16 @@ class ActivityMain : AppCompatActivity() {
                         replaceFragment(FragmentNotification(), R.id.btnNotification)
                     }
                 }
+                R.id.btnSettings -> {
+                    if (!isCurrentFragment(FragmentSettings::class.java)) {
+                        replaceFragment(FragmentSettings(), R.id.btnSettings)
+                    }
+                }
+                R.id.btnProfile -> {
+                    if (!isCurrentFragment(FragmentProfile::class.java)) {
+                        replaceFragment(FragmentProfile(), R.id.btnProfile)
+                    }
+                }
                 R.id.btnAdministrator -> {
                     if (!isCurrentFragment(FragmentAdministrator::class.java)) {
                         replaceFragment(FragmentAdministrator(), R.id.btnAdministrator)
@@ -123,51 +148,10 @@ class ActivityMain : AppCompatActivity() {
                         replaceFragment(FragmentDataLevel(), R.id.btnScheduleManager)
                     }
                 }
-                R.id.btnSignOut -> {
-                    DialogUtil.showBottomSheetConfirmation(
-                        this,
-                        "Sign Out",
-                        R.drawable.signout,
-                        "Sign Out",
-                        { bottomSheetBinding, bottomSheet ->
-
-                            bottomSheetBinding.tvTittle.text = buildString {
-                                append("Are You Sure You Want To Sign Out?")
-                            }
-
-                            bottomSheetBinding.btnYes.setOnClickListener {
-                                firebaseAuth.signOut()
-                                startActivity(Intent(this, ActivityStart::class.java))
-                                finish()
-                            }
-                        }
-                    )
-                }
             }
             drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                val fragmentManager = supportFragmentManager
-                if (fragmentManager.backStackEntryCount > 0) {
-                    fragmentManager.popBackStack()
-                } else {
-                    if (backPressedOnce) {
-                        finish()
-                    } else {
-                        backPressedOnce = true
-                        DialogUtil.showToast(
-                            context = this@ActivityMain,
-                            message = "Press Again To Exit",
-                            icon = R.drawable.exit
-                        )
-                        handler.postDelayed({ backPressedOnce = false }, 2000)
-                    }
-                }
-            }
-        })
     }
 
     fun btnDrawer() {
@@ -176,7 +160,7 @@ class ActivityMain : AppCompatActivity() {
 
     private fun replaceFragment(fragment: Fragment, menuItemUid: Int? = null) {
         supportFragmentManager.beginTransaction().apply {
-            replace(R.id.fragmentContainer, fragment)
+            replace(R.id.mainFragmentContainer, fragment)
             commit()
         }
 
@@ -186,16 +170,8 @@ class ActivityMain : AppCompatActivity() {
     }
 
     private fun isCurrentFragment(fragmentClass: Class<out Fragment>): Boolean {
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
         return currentFragment != null && currentFragment::class.java == fragmentClass
     }
 
-
-    override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START)
-        } else {
-            super.onBackPressed()
-        }
-    }
 }

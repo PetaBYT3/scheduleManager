@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:name=".application.Scheduler"
@@ -16,52 +20,35 @@
         android:theme="@style/Theme.Scheduler"
         tools:targetApi="31">
         <activity
-            android:name=".activity.ActivityCourse"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityClasses"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityInputNik"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityChooseRole"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityMajorManager"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityLecturer"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityRoom"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityBuilding"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivityMajor"
+            android:name=".activity.ActivityAlarm"
             android:exported="false" />
         <activity
             android:name=".activity.ActivityMain"
-            android:exported="false" />
-        <activity
-            android:name=".activity.ActivitySignUp"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".activity.ActivitySignIn"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.ActivityStart"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.ForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

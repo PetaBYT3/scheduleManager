@@ -1,5 +1,9 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -8,19 +12,70 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.schedule.rt.sync.dataclass.DataClassCourse
+import java.time.LocalDate
 
 class ViewModelSchedule: ViewModel() {
 
     private val databaseReference = FirebaseDatabase.getInstance().getReference("courses")
 
-    var uidBuilding: String? = null
-    var uidRoom: String? = null
-    var day: String? = null
+    fun getCurrentDay(context: Context): LiveData<String?> {
+        val currentDay = MutableLiveData<String?>()
+
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val getDay = LocalDate
+                    .now()
+                    .dayOfWeek
+                    .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("en", "US"))
+                    .lowercase()
+                currentDay.postValue(getDay)
+            }
+        }
+
+        // Register the receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_TICK) // Optional: update setiap menit
+        }
+
+        context.registerReceiver(receiver, filter)
+
+        // Set nilai awal saat fungsi dipanggil
+        val getDay = LocalDate
+            .now()
+            .dayOfWeek
+            .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("en", "US"))
+            .lowercase()
+        currentDay.postValue(getDay)
+
+        return currentDay
+    }
+
+    private val _day = MutableLiveData<String?>()
+    val day: LiveData<String?> = _day
+
+    fun sendDay(day: String?) {
+        _day.value = day
+    }
+
+    private val _uidBuildingReference = MutableLiveData<String?>()
+    val uidBuildingReference: LiveData<String?> = _uidBuildingReference
+
+    fun uidBuildingReference(uidBuilding: String?) {
+        _uidBuildingReference.value = uidBuilding
+    }
+
+    private val _uidRoomReference = MutableLiveData<String?>()
+    val uidRoomReference: LiveData<String?> = _uidRoomReference
+
+    fun uidRoomReference(uidRoom: String?) {
+        _uidRoomReference.value = uidRoom
+    }
 
     fun getSchedule(day: String?): LiveData<List<DataClassCourse>> {
         val dataSchedule = MutableLiveData<List<DataClassCourse>>()
         val uidRoomDay = buildString {
-            append(uidRoom)
+            append(uidRoomReference.value)
             append("_")
             append(day)
         }
@@ -32,7 +87,8 @@ class ViewModelSchedule: ViewModel() {
                     val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
                     getSchedule?.let { listSchedule.add(it) }
                 }
-                dataSchedule.value = listSchedule
+
+                dataSchedule.value = listSchedule.sortedByStartTime()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -42,99 +98,184 @@ class ViewModelSchedule: ViewModel() {
         return dataSchedule
     }
 
-    var startTime: String? = null
-    var endTime: String? = null
-
-    fun addSchedule(uidCourse: String?, uidLecturer: String?): LiveData<String?> {
-        val result = MutableLiveData<String?>()
-        val uidRoomDay = buildString {
-            append(uidRoom)
-            append("_")
-            append(day)
-
-        }
-        val ref = databaseReference.orderByChild("uidRoomDay").equalTo(uidRoomDay)
-        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+    fun getScheduleForStudent(uidClasses: String?, day: String?): LiveData<List<DataClassCourse>> {
+        val dataSchedule = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
+        ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                var isScheduleConflict = false
+                val listSchedule = mutableListOf<DataClassCourse>()
                 for (dataSnapshot in snapshot.children) {
-                    val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
-                    val startTimeSchedule = getSchedule?.startTime
-                    val endTimeSchedule = getSchedule?.endTime
-                    val startTimeScheduleInt = stringTimeToInt(startTimeSchedule.toString())
-                    val endTimeScheduleInt = stringTimeToInt(endTimeSchedule.toString())
-                    val startTimeInt = stringTimeToInt(startTime.toString())
-                    val endTimeInt = stringTimeToInt(endTime.toString())
-                    if (startTimeInt in startTimeScheduleInt..endTimeScheduleInt || endTimeInt in startTimeScheduleInt..endTimeScheduleInt) {
-                        isScheduleConflict = true
-                        break
+                    val getCourse = dataSnapshot.getValue(DataClassCourse::class.java)
+                    if (getCourse?.day == day) {
+                        getCourse?.let { listSchedule.add(it) }
                     }
                 }
-
-                if (isScheduleConflict == true) {
-                    result.value = "ScheduleConflict"
-                } else {
-                    val dayRef = databaseReference.orderByChild("day").equalTo(day)
-                    dayRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                        override fun onDataChange(snapshot: DataSnapshot) {
-                            val scheduleWithLecturer = mutableListOf<DataClassCourse>()
-                            for (dataSnapshot in snapshot.children) {
-                                val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
-                                if (getSchedule?.uidLecturer == uidLecturer) {
-                                    getSchedule?.let { scheduleWithLecturer.add(it) }
-                                }
-                            }
-
-                            var isLecturerConflict = false
-                            for (schedule in scheduleWithLecturer) {
-                                val startTimeSchedule = schedule.startTime
-                                val endTimeSchedule = schedule.endTime
-                                val startTimeScheduleInt = stringTimeToInt(startTimeSchedule.toString())
-                                val endTimeScheduleInt = stringTimeToInt(endTimeSchedule.toString())
-                                val startTimeInt = stringTimeToInt(startTime.toString())
-                                val endTimeInt = stringTimeToInt(endTime.toString())
-                                if (startTimeInt in startTimeScheduleInt..endTimeScheduleInt || endTimeInt in startTimeScheduleInt..endTimeScheduleInt) {
-                                    isLecturerConflict = true
-                                    break
-                                }
-                            }
-
-                            if (isLecturerConflict == true) {
-                                result.value = "LecturerConflict"
-                            } else {
-                                val dataSchedule = mapOf(
-                                    "uidBuilding" to uidBuilding,
-                                    "uidRoom" to uidRoom,
-                                    "day" to day,
-                                    "uidRoomDay" to buildString {
-                                        append(uidRoom)
-                                        append("_")
-                                        append(day)
-                                    },
-                                    "startTime" to startTime,
-                                    "endTime" to endTime
-                                )
-
-                                databaseReference.child(uidCourse.toString()).updateChildren(dataSchedule).addOnCompleteListener {
-                                    result.value = "Success"
-                                }.addOnFailureListener {
-                                    result.value = "Fail"
-                                }
-                            }
-                        }
-
-                        override fun onCancelled(error: DatabaseError) {
-                            TODO("Not yet implemented")
-                        }
-                    })
-
-                }
+                dataSchedule.value = listSchedule.sortedByStartTime()
             }
 
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }
         })
+        return dataSchedule
+    }
+
+    fun getScheduleForLecturer(uidLecturer: String?, day: String?): LiveData<List<DataClassCourse>> {
+        val dataSchedule = MutableLiveData<List<DataClassCourse>>()
+        val ref = databaseReference.orderByChild("uidLecturer").equalTo(uidLecturer)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listSchedule = mutableListOf<DataClassCourse>()
+                for (dataSnapshot in snapshot.children) {
+                    val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
+                    if (getSchedule?.day == day) {
+                        getSchedule?.let { listSchedule.add(it) }
+                    }
+                }
+                dataSchedule.value = listSchedule.sortedByStartTime()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return dataSchedule
+    }
+
+    private val _startTime = MutableLiveData<String?>()
+    val startTime: LiveData<String?> = _startTime
+
+    private val _endTime = MutableLiveData<String?>()
+    val endTime: LiveData<String?> = _endTime
+
+    fun sendStartTime(startTime: String?) {
+        _startTime.value = startTime
+    }
+
+    fun sendEndTime(endTime: String?) {
+        _endTime.value = endTime
+    }
+
+    fun addSchedule(uidCourse: String?, uidLecturer: String?, uidClasses: String?): LiveData<String?> {
+        val startTimeInput = stringTimeToInt(startTime.value.toString())
+        val endTimeInput = stringTimeToInt(endTime.value.toString())
+        val result = MutableLiveData<String?>()
+        val uidRoomDay = buildString {
+            append(uidRoomReference.value)
+            append("_")
+            append(day.value)
+
+        }
+
+        if (endTimeInput > 1439) {
+            result.value = "Invalid time"
+        } else {
+            val ref = databaseReference.orderByChild("uidRoomDay").equalTo(uidRoomDay)
+            ref.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var isScheduleConflict = false
+                    for (dataSnapshot in snapshot.children) {
+                        val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
+                        val startTimeRoom = stringTimeToInt(getSchedule?.startTime.toString())
+                        val endTimeRoom = stringTimeToInt(getSchedule?.endTime.toString())
+                        if (startTimeInput in startTimeRoom..endTimeRoom || endTimeInput in startTimeRoom..endTimeRoom) {
+                            isScheduleConflict = true
+                            break
+                        }
+                    }
+
+                    if (isScheduleConflict == true) {
+                        result.value = "ScheduleConflict"
+                    } else {
+                        val dayRef = databaseReference.orderByChild("day").equalTo(day.value)
+                        dayRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                val lecturerSchedule = mutableListOf<DataClassCourse>()
+                                for (dataSnapshot in snapshot.children) {
+                                    val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
+                                    if (getSchedule?.uidLecturer == uidLecturer) {
+                                        getSchedule?.let { lecturerSchedule.add(it) }
+                                    }
+                                }
+
+                                var isLecturerConflict = false
+                                for (schedule in lecturerSchedule) {
+                                    val startTimeLecturer = stringTimeToInt(schedule.startTime.toString())
+                                    val endTimeLecturer = stringTimeToInt(schedule.endTime.toString())
+                                    if (startTimeInput in startTimeLecturer..endTimeLecturer || endTimeInput in startTimeLecturer..endTimeLecturer) {
+                                        isLecturerConflict = true
+                                        break
+                                    }
+                                }
+
+                                if (isLecturerConflict == true) {
+                                    result.value = "LecturerConflict"
+                                } else {
+                                    val classRef = databaseReference.orderByChild("day").equalTo(day.value)
+                                    classRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                                        override fun onDataChange(snapshot: DataSnapshot) {
+                                            val classSchedule = mutableListOf<DataClassCourse>()
+                                            for (snapshot in snapshot.children) {
+                                                val getSchedule = snapshot.getValue(DataClassCourse::class.java)
+                                                if (getSchedule?.uidClasses == uidClasses) {
+                                                    getSchedule?.let { classSchedule.add(it) }
+                                                }
+                                            }
+
+                                            var isClassConflict = false
+                                            for (schedule in classSchedule) {
+                                                val startTimeClass = stringTimeToInt(schedule.startTime.toString())
+                                                val endTimeClass = stringTimeToInt(schedule.endTime.toString())
+                                                if (startTimeInput in startTimeClass..endTimeClass || endTimeInput in startTimeClass..endTimeClass) {
+                                                    isClassConflict = true
+                                                    break
+                                                }
+                                            }
+
+                                            if (isClassConflict == true) {
+                                                result.value = "ClassConflict"
+                                            } else {
+                                                val dataSchedule = mapOf(
+                                                    "uidBuilding" to uidBuildingReference.value,
+                                                    "uidRoom" to uidRoomReference.value,
+                                                    "day" to day.value,
+                                                    "uidRoomDay" to buildString {
+                                                        append(uidRoomReference.value)
+                                                        append("_")
+                                                        append(day.value)
+                                                    },
+                                                    "startTime" to startTime.value,
+                                                    "endTime" to endTime.value
+                                                )
+
+                                                databaseReference.child(uidCourse.toString()).updateChildren(dataSchedule).addOnCompleteListener {
+                                                    result.value = "Success"
+                                                }.addOnFailureListener {
+                                                    result.value = "Fail"
+                                                }
+                                            }
+                                        }
+
+                                        override fun onCancelled(error: DatabaseError) {
+                                            TODO("Not yet implemented")
+                                        }
+                                    })
+                                }
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                                TODO("Not yet implemented")
+                            }
+                        })
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    TODO("Not yet implemented")
+                }
+            })
+        }
         return result
     }
 
@@ -161,5 +302,14 @@ class ViewModelSchedule: ViewModel() {
         val hour = timeSplit[0].toInt()
         val minute = timeSplit[1].toInt()
         return hour * 60 + minute
+    }
+
+    private fun List<DataClassCourse>.sortedByStartTime(): List<DataClassCourse> {
+        return this.sortedBy { course ->
+            course.startTime?.let {
+                val (hour, minute) = it.split(":").map { it.toInt() }
+                hour * 60 + minute
+            }
+        }
     }
 }

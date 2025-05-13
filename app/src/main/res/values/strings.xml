@@ -6,25 +6,44 @@
     <string name="close">Close</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="lorem_ipsum">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. In porttitor elementum dui eu ultrices. Ut vel facilisis mauris. Ut eu lectus dignissim, bibendum massa vitae, tincidunt nulla. Nam cursus, lectus molestie varius mattis, ex purus mattis risus, non euismod neque libero non velit. Nam nec consectetur lacus. Cras in leo orci. Ut suscipit tellus elit, congue semper lorem viverra a. Praesent rhoncus vitae neque non aliquam. Integer id turpis id mi eleifend dignissim id nec erat. Nam eget ipsum vel dui imperdiet vestibulum quis at nunc.
 
-Ut iaculis hendrerit mi, cursus rhoncus nulla varius eu. Fusce pretium, sapien condimentum elementum egestas, purus turpis porta ex, scelerisque vehicula dui lacus vitae libero. Vestibulum diam nisi, scelerisque in ex in, luctus pulvinar ex. Praesent facilisis sem est, feugiat accumsan odio ornare a. Ut ante arcu, venenatis eu euismod facilisis, vulputate eget nunc. Vivamus in erat eget tellus facilisis pharetra ut id ipsum. Cras lacinia, ex vel vehicula faucibus, risus velit vestibulum velit, eget cursus libero nibh vitae mauris. Fusce mollis, ante ac luctus consequat, enim ligula egestas turpis, vitae laoreet ipsum sapien vitae tellus. Aenean bibendum non ex a laoreet.
+    <string name="lecturerDataDescription">
+        Add, Edit, Delete, and giving Administrator Access or Permission to Lecturer
+    </string>
 
-Fusce lobortis sem et mauris scelerisque, eget consectetur augue semper. Duis eget quam vitae justo ullamcorper consectetur. Sed euismod eu neque eget condimentum. Nunc pellentesque a mauris vel gravida. Nulla sed nisl eget magna mattis porta et in diam. Nam nec massa varius, cursus urna a, semper est. Maecenas enim risus, malesuada vel odio vitae, mollis porttitor nunc.
+    <string name="majorDataDescription">
+        Add, Edit, Delete Major, and set Schedule manager to specific Major
+    </string>
 
-Donec rhoncus rutrum metus, vitae elementum ex tincidunt in. Donec et auctor enim. Curabitur viverra nulla diam, ac sodales nisl fringilla at. In tellus sapien, scelerisque semper mi et, dignissim mattis purus. Suspendisse tristique vel dolor id sodales. Donec eget magna quis massa placerat euismod. Vestibulum molestie iaculis justo quis porta. Morbi interdum dui sit amet dui pellentesque sollicitudin. Aenean mi lorem, vestibulum ut aliquam in, interdum id lectus. Pellentesque scelerisque lacus non volutpat cursus. Duis ultricies justo eleifend enim efficitur interdum. Etiam aliquam mattis fringilla. Nunc mattis varius feugiat. Mauris eget tristique erat. Fusce hendrerit libero ut velit fermentum pretium.
+    <string name="buildingDataDescription">
+        Add, Edit, Delete Building and Room
+    </string>
 
-Sed tempor vehicula nisi eu fermentum. Vestibulum eu dolor ut nisi malesuada ullamcorper. Mauris hendrerit aliquet massa, eget rutrum felis fringilla et. Sed mollis est nec ipsum gravida, molestie fringilla augue ornare. Pellentesque ante libero, ornare ut varius vel, ullamcorper ac ligula. Pellentesque sodales, velit nec ornare vestibulum, sem justo consectetur mauris, id tincidunt felis augue id risus. Vivamus id semper neque. Nulla facilisi. Proin bibendum diam massa, rhoncus congue ligula dignissim id. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus tristique ornare erat, ut ultricies nunc ultrices non. Suspendisse potenti. Nullam tempus tortor vitae lorem maximus, non tempus velit dapibus. Morbi placerat eu ligula non porttitor. Duis at sollicitudin metus.
+    <string name="editDataDescription">
+        Edit your profile data, by changing Major, Level, Class and even change your role if you wrong select role or pick Major data in the setup
+    </string>
 
-Aenean et ipsum orci. Donec nec libero ut erat maximus scelerisque. Integer bibendum mollis mi, sed pellentesque risus finibus ac. Integer sed erat ex. Ut congue neque lectus, porttitor ullamcorper enim blandit eget. Nulla mattis risus non pharetra luctus. Donec convallis ipsum sed tortor aliquam viverra. Pellentesque sit amet arcu accumsan, consequat ante nec, sagittis justo. Maecenas at nunc non turpis laoreet ullamcorper vel ut diam.
+    <string name="studentRoleDescription">
+        Select this if you are a student, and choose your Major, Level, and Class to see your schedule
+    </string>
 
-Praesent ut est at est pretium porttitor. Pellentesque volutpat, neque euismod ultrices malesuada, est ligula commodo erat, aliquam aliquam lorem urna ut magna. Donec condimentum accumsan faucibus. Aenean vel facilisis felis. Etiam varius vehicula pellentesque. Mauris luctus vitae sapien in maximus. Quisque sed sollicitudin eros. Vestibulum efficitur mollis felis, in congue sapien fermentum eu. Vivamus eget metus felis. Fusce laoreet nunc non nulla vulputate, ut dapibus ligula iaculis. Donec fringilla justo enim, in fringilla ante faucibus a. Donec rutrum elit ligula, non varius urna luctus vel. Aenean id tempor erat. Etiam mattis augue quis eros faucibus, sit amet hendrerit velit imperdiet. Integer at aliquet diam. Proin vitae neque et lorem ultrices ultrices.
+    <string name="lecturerRoleDescription">
+        Select this if you are a lecturer, and input your NIK to validate if you are a lecturer
+    </string>
 
-Nulla hendrerit, metus a consectetur dignissim, mi nibh fermentum nunc, a dapibus magna ex consequat risus. Pellentesque vel ornare nulla. Nulla imperdiet nisi finibus nulla dignissim bibendum. Nulla tempor lectus sed euismod pharetra. Duis vestibulum tincidunt nisl, id pharetra lorem vulputate quis. Vivamus id est enim. Aliquam pulvinar malesuada mauris, eu faucibus ipsum volutpat eget. Aliquam dignissim ante at nunc imperdiet, ac gravida enim egestas. Sed tincidunt libero a semper dignissim.
+    <string name="settingsNotificationDescription">
+        Turn this on or give notification permission to receive notification
+    </string>
 
-Donec bibendum lacus nec elit lobortis bibendum. Integer suscipit est vitae turpis pulvinar imperdiet. Proin varius sapien id porta gravida. Mauris ullamcorper porttitor est, volutpat consectetur augue volutpat ut. Integer sem urna, pulvinar eleifend nisl tempus, feugiat suscipit tortor. Sed ullamcorper, arcu in volutpat lacinia, risus felis dignissim augue, eget fringilla est erat porttitor ex. Etiam ornare lacus at tellus viverra, et lacinia dolor dictum. Proin suscipit ipsum et nunc dignissim, id blandit odio convallis. Vestibulum eget mauris lacus. Integer ac mollis nunc, tincidunt commodo erat. Proin vestibulum blandit lacinia. Donec non laoreet erat. Maecenas quis nisl nec ante elementum vulputate. Praesent semper sem at convallis placerat. Morbi sed tellus sed tortor efficitur sagittis. Donec orci metus, posuere non ligula sed, pharetra tincidunt odio.
+    <string name="settingsForegroundServicesDescription">
+        Turn this on will allowing background services that synced your schedule data, and give notification about incoming schedule with countdown
+    </string>
 
-Integer viverra facilisis felis eget suscipit. Cras faucibus, metus sed semper posuere, orci nisl lobortis augue, quis convallis ex ante eget arcu. Pellentesque efficitur tincidunt laoreet. Etiam ultricies mi ut varius venenatis. Aenean et varius erat, condimentum lobortis ex. Nullam ipsum massa, pretium vel blandit et, rutrum eget erat. Aenean tempus sit amet tellus porta placerat. Donec porttitor leo at porttitor maximus. Etiam ut tincidunt sapien. Pellentesque volutpat volutpat risus in pellentesque. Vivamus est enim, tincidunt at felis sed, fringilla tristique leo. Nullam quis felis nisi.
+    <string name="settingsForegroundServicesNote">
+        Note!. Give notification permission to receive notification about incoming schedule from Foreground Services
+    </string>
+
+    <string name="settingsAlarmDelayDescription">
+        Set this to customize the delay of incoming schedule notification
     </string>
 </resources>

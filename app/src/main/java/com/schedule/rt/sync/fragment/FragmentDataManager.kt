@@ -4,28 +4,29 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
-import com.schedule.rt.sync.adapter.AdapterDataManager
 import com.schedule.rt.sync.adapter.AdapterLecturer
 import com.schedule.rt.sync.databinding.FragmentDataManagerBinding
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeTopFragmentAndShowPrevious
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
-import com.schedule.rt.sync.viewmodel.ViewModelAdministrator
+import com.schedule.rt.sync.viewmodel.ViewModelData
 import com.schedule.rt.sync.viewmodel.ViewModelLecturer
+import com.schedule.rt.sync.viewmodel.ViewModelMajor
 
 class FragmentDataManager : Fragment() {
 
-    private lateinit var binding: FragmentDataManagerBinding
+    private var _binding: FragmentDataManagerBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvManager: AdapterDataManager
-
-    private val viewModelAdministrator : ViewModelAdministrator by activityViewModels()
-    private val viewModelLecturer : ViewModelLecturer by activityViewModels()
+    private val vmData: ViewModelData by activityViewModels()
+    private val vmMajor: ViewModelMajor by activityViewModels()
+    private val vmLecturer : ViewModelLecturer by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +42,7 @@ class FragmentDataManager : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataManagerBinding.inflate(inflater, container, false)
+        _binding = FragmentDataManagerBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -52,21 +53,13 @@ class FragmentDataManager : Fragment() {
             TransitionUtil.slideUpTransition(binding.nestedScrollView)
         }
 
-        actionBar()
-
-        rvManager()
-
-    }
-
-    private fun actionBar() {
         binding.toolBar.setNavigationOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed()
+            requireActivity().supportFragmentManager.popBackStack()
         }
 
-        val uidMajor = viewModelAdministrator.uidMajor
-        viewModelAdministrator.getMajorByUid(uidMajor)
-        viewModelAdministrator.dataMajorByUid.observe(viewLifecycleOwner) {
-            binding.toolBar.title = buildString {
+        val uidMajor = vmData.uidMajor.value
+        vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
+            binding.clToolBar.title = buildString {
                 append(it?.nameMajor)
                 append(" Manager")
             }
@@ -75,127 +68,139 @@ class FragmentDataManager : Fragment() {
         binding.btnAdd.setOnClickListener {
             addManager()
         }
+
+        rvManager()
+
     }
 
     private fun rvManager() {
-        recyclerView = binding.rvManager
-        adapterRvManager = AdapterDataManager()
-        recyclerView.adapter = adapterRvManager
+        val recyclerView: RecyclerView = binding.rvManager
+        val adapter = AdapterLecturer(
+            vmMajor, viewLifecycleOwner,
+            tvData1 = true,
+            btnFirst = false,
+            btnSecond = true,
+            btnNext = false,
+            onSecondClick = {
+                val uidLecturer = it.uidLecturer
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
 
-        viewModelAdministrator.getManager()
-        viewModelAdministrator.dataManager.observe(viewLifecycleOwner) {
-            adapterRvManager.updateRvMajorManager(it)
-            if (it.isNotEmpty()) {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.VISIBLE
-            }
-        }
-
-        adapterRvManager.setOnItemClickListener(object : AdapterDataManager.onItemClickListener {
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Add Manager",
-                    R.drawable.add,
-                    "Add",
-                    { bottomSheetBinding, bottomSheet ->
-
-                        val uidLecturer = adapterRvManager.dataClassLecturer[position].uidLecturer
-                        viewModelLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = it?.nameLecturer
-                            bottomSheetBinding.tvData1.text = it?.nikLecturer
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                         }
 
-                        bottomSheetBinding.btnYes.setOnClickListener {
-                            viewModelAdministrator.deleteManager(uidLecturer)
-                            viewModelAdministrator.deleteManagerStatus.observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            Toast.makeText(requireContext(), "Success", Toast.LENGTH_SHORT).show()
-                                            bottomSheet.dismiss()
-                                        }
-                                        "Fail" -> {
-                                            Toast.makeText(requireContext(), "Success", Toast.LENGTH_SHORT).show()
-                                        }
+                        cardBinding.toolBar.title = "Delete Manager"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
+
+                        vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
+                            cardBinding.tvTitle.text = it?.nameLecturer
+                            cardBinding.tvData1.text = it?.nikLecturer
+                        }
+
+                        cardBinding.tvData2.visibility = View.GONE
+                        cardBinding.tvData3.visibility = View.GONE
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
+
+                        cardBinding.btnYes.setOnClickListener {
+                            vmLecturer.deleteLecturerManager(uidLecturer).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Delete Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                     }
-                                    viewModelAdministrator.deleteManagerStatus.value = null
+                                    "Fail" -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
+                                    }
                                 }
                             }
                         }
                     }
-                )
+                }
+                addFragmentWithoutBackStack(fragmentCard)
             }
-        })
+        )
+
+        recyclerView.adapter = adapter
+
+        val uidMajor = vmData.uidMajor.value
+        vmLecturer.getLecturerByManager(uidMajor.toString()).observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
+            }
+        }
     }
 
     private fun addManager() {
-        val bottomSheetLecturer = BottomSheetLecturer()
+        val fragmentLecturer = FragmentSelectLecturer().apply {
+            onViewCreated = { fragmentSelect ->
+                fragmentSelect.toolBar.setNavigationOnClickListener {
+                    removeTopFragmentAndShowPrevious()
+                }
 
-        bottomSheetLecturer.show(parentFragmentManager, "BottomSheetLecturer")
-        bottomSheetLecturer.setOnClickListener(object : BottomSheetLecturer.setOnClickListener {
-            override fun onAddClick(position: Int, adapterRvLecturer: AdapterLecturer) {
-                val uidMajorManager = adapterRvLecturer.dataClassLecturer[position].uidMajorManager
-                val uidMajor = viewModelAdministrator.uidMajor
+                recyclerView(
+                    tvData1 = true,
+                    tvData2 = false,
+                    tvData3 = true,
+                    tvData4 = false,
+                    tvData5 = false
+                )
+            }
+            onAddClick = {
+                val uidLecturer = it.uidLecturer
 
-                if (uidMajorManager == uidMajor) {
-                    DialogUtil.showToast(requireActivity(), "Lecturer Already Manage This Major", R.drawable.copy)
-                } else {
-                    DialogUtil.showBottomSheetConfirmation(
-                        requireActivity(),
-                        "Add Manager",
-                        R.drawable.add,
-                        "Add",
-                        { bottomSheetBinding, bottomSheet ->
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
 
-                            bottomSheetBinding.layoutAddManager.visibility = View.VISIBLE
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeTopFragmentAndShowPrevious()
+                        }
 
-                            val uidLecturer = adapterRvLecturer.dataClassLecturer[position].uidLecturer
-                            viewModelLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
-                                bottomSheetBinding.tvTittle.text = it?.nameLecturer
-                                bottomSheetBinding.tvData1.text = it?.nikLecturer
-                                viewModelAdministrator.getMajorManager(uidMajorManager).observe(viewLifecycleOwner) {
-                                    val currentMajor = it?.nameMajor
-                                    if (currentMajor != null) {
-                                        bottomSheetBinding.tvCurrentMajor.text = it.nameMajor
-                                    } else {
-                                        bottomSheetBinding.tvCurrentMajor.text = buildString {
-                                            append("-")
-                                        }
+                        cardBinding.toolBar.title = "Add Manager"
+                        cardBinding.ivYes.setImageResource(R.drawable.add)
+                        cardBinding.tvYes.text = "Add"
+
+                        vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
+                            cardBinding.tvTitle.text = it?.nameLecturer
+                            cardBinding.tvData1.text = it?.nikLecturer
+                        }
+
+                        val uidMajor = vmData.uidMajor.value
+                        vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
+                            cardBinding.tvData2.text = it?.nameMajor
+                        }
+
+                        cardBinding.btnYes.setOnClickListener {
+                            vmLecturer.addLecturerManager(uidLecturer, uidMajor).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
                                     }
-                                }
-                            }
-
-                            viewModelAdministrator.getMajorByUid(uidMajor)
-                            viewModelAdministrator.dataMajorByUid.observe(viewLifecycleOwner) {
-                                bottomSheetBinding.tvNewMajor.text = it?.nameMajor
-                            }
-
-                            bottomSheetBinding.btnYes.setOnClickListener {
-                                viewModelAdministrator.addManager(uidLecturer)
-                                viewModelAdministrator.addManagerStatus.observe(viewLifecycleOwner) {
-                                    if (it != null) {
-                                        when (it) {
-                                            "Success" -> {
-                                                Toast.makeText(requireContext(), "Success", Toast.LENGTH_SHORT).show()
-                                                bottomSheet.dismiss()
-                                                bottomSheetLecturer.dismiss()
-                                            }
-                                            "Fail" -> {
-                                                Toast.makeText(requireContext(), "Success", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        viewModelAdministrator.addManagerStatus.value = null
+                                    "Fail" -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
                                     }
                                 }
                             }
                         }
-                    )
+                    }
                 }
+                addFragmentWithoutBackStack(fragmentCard)
             }
-        })
+        }
+        addFragmentWithoutBackStack(fragmentLecturer)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        _binding = null
     }
 }

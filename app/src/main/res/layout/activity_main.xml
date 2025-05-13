@@ -11,21 +11,33 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="true"
+        android:animateLayoutChanges="true">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/mainFragmentContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="0dp"
+            android:transitionGroup="true"
+            app:layout_constraintBottom_toTopOf="@+id/mainBottomSheetContainer"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/fragmentContainer"
-                android:transitionGroup="true"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <FrameLayout
+            android:id="@+id/mainToastContainer"
+            android:background="@android:color/transparent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:transitionGroup="true"
+            app:layout_constraintBottom_toTopOf="@+id/mainBottomSheetContainer" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        <FrameLayout
+            android:id="@+id/mainBottomSheetContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:transitionGroup="true"
+            android:animateLayoutChanges="true"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

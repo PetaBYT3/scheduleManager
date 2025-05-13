@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.objectsingleton
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.transition.TransitionManager
 import android.view.View
@@ -53,9 +54,6 @@ object TransitionUtil {
         view.visibility = View.VISIBLE
     }
 
-
-
-
     private const val sharedElementTransition = android.R.transition.move
 
     fun sharedElementEnterTransition(context: Context): androidx.transition.Transition? {
@@ -81,4 +79,18 @@ object TransitionUtil {
 
         return transitionInflater
     }
+
+    fun animateHeight(view: View, startHeight: Int, endHeight: Int) {
+        val animator = ValueAnimator.ofInt(startHeight, endHeight)
+        animator.duration = 500
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.addUpdateListener { valueAnimator ->
+            val animatedValue = valueAnimator.animatedValue as Int
+            val layoutParams = view.layoutParams
+            layoutParams.height = animatedValue
+            view.layoutParams = layoutParams
+        }
+        animator.start()
+    }
+
 }

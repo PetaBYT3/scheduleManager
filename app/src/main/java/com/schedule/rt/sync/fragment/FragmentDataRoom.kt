@@ -8,24 +8,25 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
-import com.schedule.rt.sync.adapter.AdapterDataRoom
+import com.schedule.rt.sync.adapter.AdapterRoom
 import com.schedule.rt.sync.databinding.FragmentDataRoomBinding
 import com.schedule.rt.sync.dataclass.DataClassRoom
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil
+import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
+import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 
 class FragmentDataRoom : Fragment() {
 
-    private lateinit var binding: FragmentDataRoomBinding
+    private var _binding: FragmentDataRoomBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapterRvRoom: AdapterDataRoom
-    private val viewModelBuilding: ViewModelBuilding by activityViewModels()
-    private val viewModelRoom : ViewModelRoom by activityViewModels()
+    private val vmBuilding: ViewModelBuilding by activityViewModels()
+    private val vmRoom : ViewModelRoom by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +42,7 @@ class FragmentDataRoom : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentDataRoomBinding.inflate(inflater, container, false)
+        _binding = FragmentDataRoomBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -52,19 +53,12 @@ class FragmentDataRoom : Fragment() {
             TransitionUtil.slideUpTransition(binding.nestedScrollView)
         }
 
-        actionBar()
-
-        rvRoom()
-
-    }
-
-    private fun actionBar() {
         binding.toolBar.setNavigationOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
-        val uidBuilding = viewModelRoom.uidBuilding
-        viewModelBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
+        val uidBuilding = vmRoom.uidBuildingReference.value
+        vmBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
             binding.clToolBar.title = buildString {
                 append("Building ")
                 append(it?.nameBuilding)
@@ -74,151 +68,159 @@ class FragmentDataRoom : Fragment() {
         binding.btnAdd.setOnClickListener {
             addRoom()
         }
+
+        recyclerView()
+
     }
 
-    private fun rvRoom() {
-        recyclerView = binding.rvRoom
-        adapterRvRoom = AdapterDataRoom()
-        recyclerView.adapter = adapterRvRoom
+    private fun recyclerView() {
+        val recyclerView: RecyclerView = binding.rvRoom
+        val adapter = AdapterRoom(
+            btnFirst = true,
+            btnSecond = true,
+            btnNext = false,
+            onFirstClick = {
+                val uidRoom = it.uidRoom
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-        viewModelRoom.getRoom()
-        viewModelRoom.dataRoom.observe(viewLifecycleOwner) {
-            adapterRvRoom.updateRvRoom(it)
-            if (it.isNotEmpty()) {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.GONE
-            } else {
-                binding.pbRv.visibility = View.GONE
-                binding.layoutNoData.visibility = View.VISIBLE
-            }
-        }
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-        adapterRvRoom.setOnItemClickListener(object : AdapterDataRoom.onItemClickListener {
-            override fun onEditClick(position: Int) {
-                DialogUtil.showBottomSheet1Et(
-                    requireActivity(),
-                    "Edit Room",
-                    "Name Room",
-                    R.drawable.edit,
-                    "Edit"
-                ) { bottomSheetBinding, bottomSheet ->
+                        inputBinding.toolBar.title = "Edit Room"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
 
-                    val uidRoom = adapterRvRoom.dataClassRoom[position].uidRoom
-                    viewModelRoom.getRoomByUid(uidRoom).observe(viewLifecycleOwner) {
-                        bottomSheetBinding.etFirst.setText(it?.nameRoom)
-                    }
+                        vmRoom.getRoomByUid(uidRoom).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.nameRoom)
+                        }
 
-                    bottomSheetBinding.btnYes.setOnClickListener {
-                        val etFirst =
-                            bottomSheetBinding.etFirst.text.toString().capitalizeEachWord()
-                                .capitalizeAfterDot()
-                        val dataRoom = DataClassRoom(uidRoom = uidRoom, nameRoom = etFirst)
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                            val dataRoom = DataClassRoom(
+                                nameRoom = etFirst,
+                                uidRoom = uidRoom
+                            )
 
-                        if (etFirst.isNotEmpty()) {
-                            viewModelRoom.editRoom(dataRoom).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(requireActivity(), "Success", R.drawable.check)
-                                            bottomSheet.dismiss()
-                                        }
-
-                                        "Exist" -> {
-                                            DialogUtil.showToast(requireActivity(), "Exist", R.drawable.warning)
-                                        }
-
-                                        "Fail" -> {
-                                            DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                                        }
+                            vmRoom.editRoom(dataRoom).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    }
+                                    "Exist" -> {
+                                        showToastFragment(FragmentToast(R.drawable.copy, "Building Exist"))
+                                    }
+                                    else -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
                                     }
                                 }
                             }
-                        } else {
-                            DialogUtil.showToast(requireActivity(), "Empty", R.drawable.warning)
                         }
                     }
                 }
-            }
+                addFragmentWithoutBackStack(fragmentInput)
+            },
+            onSecondClick = {
+                val uidRoom = it.uidRoom
+                val fragmentCard = FragmentCard().apply {
+                    onViewCreated = { cardBinding ->
 
-            override fun onDeleteClick(position: Int) {
-                DialogUtil.showBottomSheetConfirmation(
-                    requireActivity(),
-                    "Delete Room",
-                    R.drawable.delete,
-                    "Delete",
-                    { bottomSheetBinding, bottomSheet ->
+                        cardBinding.toolBar.setNavigationOnClickListener {
+                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        }
 
-                        val uidRoom = adapterRvRoom.dataClassRoom[position].uidRoom
-                        viewModelRoom.getRoomByUid(uidRoom).observe(viewLifecycleOwner) {
-                            bottomSheetBinding.tvTittle.text = buildString {
+                        cardBinding.toolBar.title = "Delete Room"
+                        cardBinding.ivYes.setImageResource(R.drawable.delete)
+                        cardBinding.tvYes.text = "Delete"
+
+                        vmRoom.getRoomByUid(uidRoom).observe(viewLifecycleOwner) {
+                            cardBinding.tvTitle.text = buildString {
                                 append("Room ")
                                 append(it?.nameRoom)
                             }
                         }
 
-                        bottomSheetBinding.btnYes.setOnClickListener {
-                            viewModelRoom.deleteRoom(uidRoom).observe(viewLifecycleOwner) {
-                                if (it != null) {
-                                    when (it) {
-                                        "Success" -> {
-                                            DialogUtil.showToast(requireActivity(), "Success", R.drawable.check)
-                                            bottomSheet.dismiss()
-                                        }
-                                        "Fail" -> {
-                                            DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                                        }
+                        cardBinding.btnYes.setOnClickListener {
+                            vmRoom.deleteRoom(uidRoom).observe(viewLifecycleOwner) {
+                                when (it) {
+                                    "Success" -> {
+                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    }
+                                    else -> {
+                                        showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
                                     }
                                 }
                             }
                         }
                     }
-                )
-            }
-        })
-    }
-
-    private fun addRoom() {
-        DialogUtil.showBottomSheet1Et(
-            requireActivity(),
-            "Add Room",
-            "Name Room",
-            R.drawable.add,
-            "Add"
-        ) { bottomSheetBinding, bottomSheet ->
-
-            bottomSheetBinding.btnYes.setOnClickListener {
-                val etFirst = bottomSheetBinding.etFirst.text.toString().capitalizeEachWord()
-                    .capitalizeAfterDot()
-                val dataRoom = DataClassRoom(nameRoom = etFirst)
-
-                if (etFirst.isNotEmpty()) {
-                    viewModelRoom.addRoom(dataRoom).observe(viewLifecycleOwner) {
-                        if (it != null) {
-                            when (it) {
-                                "Success" -> {
-                                    DialogUtil.showToast(requireActivity(), "Success", R.drawable.check)
-                                    bottomSheet.dismiss()
-                                }
-
-                                "Exist" -> {
-                                    DialogUtil.showToast(requireActivity(), "Exist", R.drawable.warning)
-                                }
-
-                                "Fail" -> {
-                                    DialogUtil.showToast(requireActivity(), "Fail", R.drawable.warning)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    DialogUtil.showToast(requireActivity(), "Empty", R.drawable.warning)
                 }
+                addFragmentWithoutBackStack(fragmentCard)
+            }
+        )
+
+        recyclerView.adapter = adapter
+
+        vmRoom.getRoom().observe(viewLifecycleOwner) {
+            adapter.updateData(it)
+            if (it.isNullOrEmpty()) {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.VISIBLE
+            } else {
+                binding.pbRv.visibility = View.GONE
+                binding.layoutNoData.visibility = View.GONE
             }
         }
     }
 
+    private fun addRoom() {
+        val fragmentInput = FragmentInput().apply {
+            onViewCreated = { inputBinding ->
+
+                inputBinding.toolBar.setNavigationOnClickListener {
+                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                }
+
+                inputBinding.toolBar.title = "Add Room"
+                inputBinding.tiFirst.hint = "Room Name"
+                inputBinding.ivYes.setImageResource(R.drawable.add)
+                inputBinding.tvYes.text = "Add"
+
+                inputBinding.btnYes.setOnClickListener {
+                    val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                    val dataRoom = DataClassRoom(
+                        nameRoom = etFirst
+                    )
+
+                    if (etFirst.isNotEmpty()) {
+                        vmRoom.addRoom(dataRoom).observe(viewLifecycleOwner) {
+                            when (it) {
+                                "Success" -> {
+                                    showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                }
+                                "Exist" -> {
+                                    showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
+                                }
+                                else -> {
+                                    showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                }
+                            }
+                        }
+                    } else {
+                        showToastFragment(FragmentToast(R.drawable.fail, "Fill All Field"))
+                    }
+                }
+            }
+        }
+        addFragmentWithoutBackStack(fragmentInput)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        viewModelRoom.uidBuilding = null
+        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        _binding = null
     }
 }
