@@ -22,6 +22,7 @@ playServicesAuth = "21.3.0"
 lifecycle = "2.9.0"
 coroutines = "1.7.3"
 datastore = "1.1.6"
+lifecycleService = "2.9.0"
 
 [libraries]
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
@@ -49,6 +50,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleService" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

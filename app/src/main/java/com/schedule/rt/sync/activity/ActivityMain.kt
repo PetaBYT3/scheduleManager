@@ -1,7 +1,6 @@
 package com.schedule.rt.sync.activity
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -12,6 +11,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
 import com.schedule.rt.sync.R
@@ -23,12 +23,14 @@ import com.schedule.rt.sync.fragment.FragmentNotification
 import com.schedule.rt.sync.fragment.FragmentProfile
 import com.schedule.rt.sync.fragment.FragmentSettings
 import com.schedule.rt.sync.service.ForegroundService
+import com.schedule.rt.sync.userpreferences.SettingsPreferences
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelLecturer
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
 import com.schedule.rt.sync.viewmodel.ViewModelUser
+import kotlinx.coroutines.launch
 
 class ActivityMain : AppCompatActivity() {
 
@@ -42,6 +44,8 @@ class ActivityMain : AppCompatActivity() {
     private val vmLevel: ViewModelLevel by viewModels()
     private val vmClass: ViewModelClasses by viewModels()
     private val vmCourse: ViewModelCourse by viewModels()
+
+    private val settingsPreferences = SettingsPreferences(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,13 +77,17 @@ class ActivityMain : AppCompatActivity() {
         vmUser.getUser().observe(this) {
             val uidLecturer = it?.uidLecturer
 
-            val serviceIntent = Intent(this, ForegroundService::class.java)
-            serviceIntent.putExtra("uidClasses", it?.uidClasses)
-            serviceIntent.putExtra("uidLecturer", it?.uidLecturer)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
+            lifecycleScope.launch {
+                settingsPreferences.getForegroundServiceStatus.collect { foregroundStatus ->
+                    if (foregroundStatus) {
+                        val serviceIntent = Intent(this@ActivityMain, ForegroundService::class.java)
+                        serviceIntent.putExtra("uidLecturer", uidLecturer)
+                        serviceIntent.putExtra("uidClasses", it?.uidClasses)
+                        startForegroundService(serviceIntent)
+                    } else {
+                        stopService(Intent(this@ActivityMain, ForegroundService::class.java))
+                    }
+                }
             }
 
             if (uidLecturer != null) {

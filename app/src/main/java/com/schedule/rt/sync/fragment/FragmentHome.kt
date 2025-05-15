@@ -16,6 +16,7 @@ import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContain
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.service.PermissionManager
+import com.schedule.rt.sync.userpreferences.SettingsPreferences
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
@@ -41,6 +42,8 @@ class FragmentHome : Fragment() {
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom: ViewModelRoom by activityViewModels()
 
+    private lateinit var settingsPreferences: SettingsPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -56,6 +59,7 @@ class FragmentHome : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        settingsPreferences = SettingsPreferences(requireContext().applicationContext)
         return binding.root
     }
 
@@ -141,6 +145,8 @@ class FragmentHome : Fragment() {
                 tvData5 = true,
                 btnFirst = false,
                 btnSecond = false,
+                settingsPreferences = settingsPreferences,
+                onCountDown = true,
             )
 
             recyclerView.adapter = adapter
@@ -210,6 +216,8 @@ class FragmentHome : Fragment() {
                 tvData5 = true,
                 btnFirst = false,
                 btnSecond = false,
+                settingsPreferences = settingsPreferences,
+                onCountDown = true
             )
             recyclerView.adapter = adapter
 

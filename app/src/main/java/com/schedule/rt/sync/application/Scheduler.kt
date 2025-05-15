@@ -1,16 +1,14 @@
 package com.schedule.rt.sync.application
 
 import android.app.Application
+import com.schedule.rt.sync.userpreferences.SettingsPreferences
 
 class Scheduler : Application() {
-
-    companion object {
-        lateinit var instance: Scheduler
-            private set
-    }
+    lateinit var settingsPreferences: SettingsPreferences
+        private set
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        settingsPreferences = SettingsPreferences(applicationContext)
     }
 }

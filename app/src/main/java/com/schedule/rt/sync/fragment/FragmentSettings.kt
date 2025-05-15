@@ -6,10 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.lifecycle.lifecycleScope
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
 import com.schedule.rt.sync.databinding.FragmentSettingsBinding
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.service.PermissionManager
 import com.schedule.rt.sync.userpreferences.SettingsPreferences
@@ -37,6 +39,7 @@ class FragmentSettings : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+        settingsPreferences = SettingsPreferences(requireContext().applicationContext)
         return binding.root
     }
 
@@ -51,11 +54,11 @@ class FragmentSettings : Fragment() {
             (requireActivity() as ActivityMain).btnDrawer()
         }
 
-        settingsPreferences = SettingsPreferences(requireContext())
-
         notificationPermission()
 
         foregroundServices()
+
+        alarmDelay()
     }
 
     private fun notificationPermission() {
@@ -82,7 +85,7 @@ class FragmentSettings : Fragment() {
 
     private fun foregroundServices() {
         lifecycleScope.launch {
-            settingsPreferences.foregroundServiceStatus.collect {
+            settingsPreferences.getForegroundServiceStatus.collect {
                 binding.swForegroundServices.isChecked = it
             }
         }
@@ -94,8 +97,51 @@ class FragmentSettings : Fragment() {
         }
     }
 
+    private fun alarmDelay() {
+        this.lifecycleScope.launch {
+            settingsPreferences.getAlarmDelayMinutes.collect {
+                binding.tvCountDown.text = it.toString()
+            }
+        }
+
+        binding.btnDelayAlarm.setOnClickListener {
+            val fragmentInput = FragmentInput().apply {
+                onViewCreated = { inputBinding ->
+
+                    inputBinding.toolBar.setNavigationOnClickListener {
+                        requireActivity().supportFragmentManager.popBackStack()
+                    }
+
+                    inputBinding.toolBar.title = "Edit Alarm Delay"
+                    inputBinding.tiFirst.hint = "Minutes"
+                    inputBinding.ivYes.setImageResource(R.drawable.edit)
+                    inputBinding.tvYes.text = "Edit"
+
+                    inputBinding.etFirst.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+
+                    lifecycleScope.launch {
+                        settingsPreferences.getAlarmDelayMinutes.collect {
+                            inputBinding.etFirst.setText(it.toString())
+                        }
+                    }
+
+                    inputBinding.btnYes.setOnClickListener {
+                        val etFirst = inputBinding.etFirst.text.toString().toInt()
+                        lifecycleScope.launch {
+                            settingsPreferences.setAlarmDelay(etFirst)
+                        }.invokeOnCompletion {
+                            requireActivity().supportFragmentManager.popBackStack()
+                        }
+                    }
+                }
+            }
+            replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, "settings")
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        requireActivity().supportFragmentManager.popBackStack("settings", POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

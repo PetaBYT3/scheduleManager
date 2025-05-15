@@ -1,19 +1,26 @@
 package com.schedule.rt.sync.adapter
 
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.dataclass.DataClassCourse
 import com.schedule.rt.sync.function.dpToPx
+import com.schedule.rt.sync.userpreferences.SettingsPreferences
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
@@ -21,8 +28,17 @@ import com.schedule.rt.sync.viewmodel.ViewModelLecturer
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class AdapterCourse(
     private val vmLecturer: ViewModelLecturer,
@@ -47,25 +63,25 @@ class AdapterCourse(
     private val onFirstClick: ((DataClassCourse) -> Unit)? = null,
     private val onSecondClick: ((DataClassCourse) -> Unit)? = null,
     private val onNextClick: ((DataClassCourse) -> Unit)? = null,
-): RecyclerView.Adapter<AdapterCourse.ViewHolder>() {
+    private val settingsPreferences: SettingsPreferences? = null,
+    private val onCountDown: Boolean? = null
+) : RecyclerView.Adapter<AdapterCourse.ViewHolder>() {
 
     val dataClassCourse = mutableListOf<DataClassCourse>()
+    private val handler = Handler(Looper.getMainLooper())
+    private val activeCountdowns = ConcurrentHashMap<String, Runnable>()
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_parent, parent, false)
         return ViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(
-        holder: ViewHolder,
-        position: Int
-    ) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.ivItem.setImageResource(R.drawable.course)
-
         holder.btnNext.visibility = View.GONE
+        holder.pbCountDown.visibility = if (onCountDown == true) View.VISIBLE else View.GONE
+        holder.layoutCountDown.visibility = if (onCountDown == true) View.VISIBLE else View.GONE
 
         if (marginToTopItem == true) {
             val layoutParams = holder.itemView.layoutParams as MarginLayoutParams
@@ -99,11 +115,7 @@ class AdapterCourse(
         var nameClasses: String? = null
 
         lifecycleOwner.lifecycleScope.launch {
-            combine(
-                majorFlow,
-                levelFlow,
-                classesFlow
-            ) { major, level, classes ->
+            combine(majorFlow, levelFlow, classesFlow) { major, level, classes ->
                 nameMajor = major?.nameMajor
                 nameLevel = level?.level
                 nameClasses = classes?.nameClasses
@@ -127,10 +139,7 @@ class AdapterCourse(
         var nameRoom: String? = null
 
         lifecycleOwner.lifecycleScope.launch {
-            combine(
-                flowBuilding,
-                flowRoom
-            ) { building, room ->
+            combine(flowBuilding, flowRoom) { building, room ->
                 nameBuilding = building?.nameBuilding
                 nameRoom = room?.nameRoom
             }.collect {
@@ -205,6 +214,115 @@ class AdapterCourse(
         holder.btnNext.setOnClickListener {
             onNextClick?.invoke(currentItem)
         }
+
+        if (onCountDown == true) {
+            startCountdown(holder, currentItem)
+        }
+    }
+
+    private fun startCountdown(holder: ViewHolder, course: DataClassCourse) {
+        // Validasi data
+        if (course.startTime == null || course.day == null || settingsPreferences == null) {
+            holder.pbCountDown.visibility = View.VISIBLE
+            holder.layoutCountDown.visibility = View.VISIBLE
+            holder.pbCountDown.progress = 100
+            holder.tvCountDown.text = "60:00"
+            return
+        }
+
+        val scheduleKey = "${course.nameCourse}_${course.startTime}"
+        activeCountdowns[scheduleKey]?.let { handler.removeCallbacks(it) }
+        activeCountdowns.remove(scheduleKey) // Bersihkan sebelum memulai baru
+
+        lifecycleOwner.lifecycleScope.launch {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsPreferences.getAlarmDelayMinutes.collect { alarmDelayMinutes ->
+                    try {
+                        // Parse waktu mulai
+                        val startTime = LocalTime.parse(course.startTime, timeFormatter)
+                        val today = LocalDate.now()
+                        val startMillis = startTime.atDate(today)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                        // Gunakan ALARM_DELAY untuk jendela countdown
+                        val delayBeforeMillis = startMillis - TimeUnit.MINUTES.toMillis(alarmDelayMinutes.toLong())
+                        val now = System.currentTimeMillis()
+
+                        holder.pbCountDown.visibility = View.VISIBLE
+                        holder.layoutCountDown.visibility = View.VISIBLE
+
+                        // Cek apakah mata kuliah sudah mulai
+                        if (now > startMillis) {
+                            holder.pbCountDown.progress = 0
+                            holder.tvCountDown.text = "00:00"
+                            return@collect
+                        }
+
+                        // Cek apakah sebelum jendela countdown
+                        if (now < delayBeforeMillis) {
+                            holder.pbCountDown.progress = 100
+                            holder.tvCountDown.text = String.format("%02d:00", alarmDelayMinutes)
+                            return@collect
+                        }
+
+                        // Dalam jendela countdown
+                        var remainingMillis = startMillis - now
+                        val totalTimeMillis = TimeUnit.MINUTES.toMillis(alarmDelayMinutes.toLong())
+
+                        // Mulai countdown dengan coroutine
+                        while (remainingMillis > 0) {
+                            val minutesLeft = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
+                            val secondsLeft = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
+                            withContext(Dispatchers.Main) {
+                                holder.tvCountDown.text = String.format("%02d:%02d", minutesLeft, secondsLeft)
+                                val progress = (remainingMillis.toFloat() / totalTimeMillis * 100).toInt()
+                                holder.pbCountDown.progress = progress
+                            }
+                            delay(1000)
+                            remainingMillis -= 1000
+                        }
+
+                        // Countdown selesai
+                        withContext(Dispatchers.Main) {
+                            holder.pbCountDown.progress = 0
+                            holder.tvCountDown.text = "00:00"
+                            activeCountdowns.remove(scheduleKey)
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            holder.pbCountDown.visibility = View.VISIBLE
+                            holder.layoutCountDown.visibility = View.VISIBLE
+                            holder.pbCountDown.progress = 100
+                            holder.tvCountDown.text = String.format("%02d:00", alarmDelayMinutes)
+                            activeCountdowns.remove(scheduleKey)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        super.onViewRecycled(holder)
+        // Hentikan countdown saat view di-recycle
+        val position = holder.adapterPosition
+        if (position != RecyclerView.NO_POSITION) {
+            val course = dataClassCourse[position]
+            val scheduleKey = "${course.nameCourse}_${course.startTime}"
+            activeCountdowns[scheduleKey]?.let { handler.removeCallbacks(it) }
+            activeCountdowns.remove(scheduleKey)
+            holder.pbCountDown.visibility = View.VISIBLE
+            holder.layoutCountDown.visibility = View.VISIBLE
+            holder.pbCountDown.progress = 100
+            // Gunakan ALARM_DELAY untuk UI default
+            val alarmDelay = try {
+                settingsPreferences?.getAlarmDelayMinutes ?: 60
+            } catch (e: Exception) {
+                60
+            }
+            holder.tvCountDown.text = String.format("%02d:00", alarmDelay)
+        }
     }
 
     override fun getItemCount(): Int {
@@ -223,6 +341,9 @@ class AdapterCourse(
         val btnSecond: ConstraintLayout = itemView.findViewById(R.id.btnSecond)
         val ivNext: ImageView = itemView.findViewById(R.id.ivNext)
         val btnNext: ConstraintLayout = itemView.findViewById(R.id.btnNext)
+        val pbCountDown: ProgressBar = itemView.findViewById(R.id.pbCountDown)
+        val layoutCountDown: LinearLayout = itemView.findViewById(R.id.layoutCountDown)
+        val tvCountDown: TextView = itemView.findViewById(R.id.tvCountDown)
     }
 
     fun updateData(newData: List<DataClassCourse>) {

@@ -40,7 +40,11 @@
         <service
             android:name=".service.ForegroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".service.BootReceiver"
