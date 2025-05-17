@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.fragment
 
+import AdapterStartCarrousel
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import androidx.credentials.GetCredentialResponse
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -26,6 +28,9 @@ import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithoutBac
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelUser
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class FragmentStart : Fragment() {
@@ -34,6 +39,10 @@ class FragmentStart : Fragment() {
     private val binding get() = _binding!!
 
     private val vmUser: ViewModelUser by activityViewModels()
+
+    private lateinit var viewPager2: ViewPager2
+    private val scrollInterval = 3000L
+    private var autoScrollJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +77,46 @@ class FragmentStart : Fragment() {
             binding.pbContinueWithGoogle.visibility = View.VISIBLE
             signInWithGoogle()
         }
+
+        viewPagerCarrousel()
+    }
+
+    private fun viewPagerCarrousel() {
+        viewPager2 = binding.slideAnimation
+        val imageList = listOf(
+            R.drawable.schedule,
+            R.drawable.add_schedule,
+            R.drawable.edit_schedule,
+            R.drawable.delete_schedule
+        )
+
+        val adapterCarrousel = AdapterStartCarrousel(imageList)
+        viewPager2.adapter = adapterCarrousel
+        viewPager2.isUserInputEnabled = false
+
+        autoScrollJob()
+    }
+
+    private fun autoScrollJob() {
+        autoScrollJob?.cancel()
+
+        autoScrollJob = lifecycleScope.launch {
+            while (isActive) {
+                delay(scrollInterval)
+                val nextItem = viewPager2.currentItem + 1
+                viewPager2.setCurrentItem(nextItem, true)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        autoScrollJob?.cancel()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        autoScrollJob()
     }
 
     private fun signInWithGoogle() {

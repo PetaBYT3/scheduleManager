@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.commit
 import com.google.firebase.auth.FirebaseAuth
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
@@ -49,7 +50,12 @@ class FragmentSplash : Fragment() {
             val currentUser = FirebaseAuth.getInstance().currentUser
 
             if (currentUser == null) {
-                replaceFragmentWithoutBackStack(R.id.startFragmentContainer, FragmentStart())
+                //replaceFragmentWithoutBackStack(R.id.startFragmentContainer, FragmentStart())
+                requireActivity().supportFragmentManager.commit {
+                    setReorderingAllowed(true)
+                    addSharedElement(binding.ivSplash, "startTransition")
+                    replace(R.id.startFragmentContainer, FragmentStart())
+                }
             } else {
                 vmUser.getUser().observe(viewLifecycleOwner) {
                     val uidMajor = it?.uidMajor
