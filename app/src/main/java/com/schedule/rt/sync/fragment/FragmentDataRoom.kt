@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
@@ -13,8 +14,7 @@ import com.schedule.rt.sync.databinding.FragmentDataRoomBinding
 import com.schedule.rt.sync.dataclass.DataClassRoom
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
@@ -27,6 +27,8 @@ class FragmentDataRoom : Fragment() {
 
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom : ViewModelRoom by activityViewModels()
+
+    private val fragmentTag = "dataRoom"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,7 +87,7 @@ class FragmentDataRoom : Fragment() {
                     onViewCreated = { inputBinding ->
 
                         inputBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         inputBinding.toolBar.title = "Edit Room"
@@ -107,7 +109,7 @@ class FragmentDataRoom : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Exist" -> {
                                         showToastFragment(FragmentToast(R.drawable.copy, "Building Exist"))
@@ -120,7 +122,8 @@ class FragmentDataRoom : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentInput)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
             },
             onSecondClick = {
                 val uidRoom = it.uidRoom
@@ -128,7 +131,7 @@ class FragmentDataRoom : Fragment() {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Room"
@@ -147,7 +150,7 @@ class FragmentDataRoom : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     else -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
@@ -157,7 +160,8 @@ class FragmentDataRoom : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         )
 
@@ -180,7 +184,7 @@ class FragmentDataRoom : Fragment() {
             onViewCreated = { inputBinding ->
 
                 inputBinding.toolBar.setNavigationOnClickListener {
-                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 inputBinding.toolBar.title = "Add Room"
@@ -199,7 +203,7 @@ class FragmentDataRoom : Fragment() {
                             when (it) {
                                 "Success" -> {
                                     showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    requireActivity().supportFragmentManager.popBackStack()
                                 }
                                 "Exist" -> {
                                     showToastFragment(FragmentToast(R.drawable.copy, "Class Exist"))
@@ -215,12 +219,13 @@ class FragmentDataRoom : Fragment() {
                 }
             }
         }
-        addFragmentWithoutBackStack(fragmentInput)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

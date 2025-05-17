@@ -81,6 +81,14 @@ class FragmentSignIn : Fragment() {
                         replaceToastFragment(R.id.startToastContainer, FragmentToast(R.drawable.fail, "Fill All Fields"))
                         binding.pbYes.visibility = View.INVISIBLE
                     }
+                    "Wrong" -> {
+                        replaceToastFragment(R.id.startToastContainer, FragmentToast(R.drawable.fail, "Email Or Password Incorrect"))
+                        binding.pbYes.visibility = View.INVISIBLE
+                    }
+                    "Not Exist" -> {
+                        replaceToastFragment(R.id.startToastContainer, FragmentToast(R.drawable.fail, "User Email Not Exist"))
+                        binding.pbYes.visibility = View.INVISIBLE
+                    }
                     "Fail" -> {
                         replaceToastFragment(R.id.startToastContainer, FragmentToast(R.drawable.fail, "Email Or Password Incorrect"))
                         binding.pbYes.visibility = View.INVISIBLE

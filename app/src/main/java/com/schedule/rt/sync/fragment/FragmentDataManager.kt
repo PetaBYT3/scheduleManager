@@ -5,14 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.adapter.AdapterLecturer
 import com.schedule.rt.sync.databinding.FragmentDataManagerBinding
-import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeTopFragmentAndShowPrevious
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelData
@@ -27,6 +26,8 @@ class FragmentDataManager : Fragment() {
     private val vmData: ViewModelData by activityViewModels()
     private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLecturer : ViewModelLecturer by activityViewModels()
+
+    private val fragmentTag = "dataManager"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +88,7 @@ class FragmentDataManager : Fragment() {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Manager"
@@ -109,7 +110,7 @@ class FragmentDataManager : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Delete Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Fail" -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
@@ -119,7 +120,8 @@ class FragmentDataManager : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         )
 
@@ -142,7 +144,7 @@ class FragmentDataManager : Fragment() {
         val fragmentLecturer = FragmentSelectLecturer().apply {
             onViewCreated = { fragmentSelect ->
                 fragmentSelect.toolBar.setNavigationOnClickListener {
-                    removeTopFragmentAndShowPrevious()
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 recyclerView(
@@ -160,7 +162,7 @@ class FragmentDataManager : Fragment() {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeTopFragmentAndShowPrevious()
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Add Manager"
@@ -182,7 +184,7 @@ class FragmentDataManager : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Fail" -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
@@ -192,15 +194,16 @@ class FragmentDataManager : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         }
-        addFragmentWithoutBackStack(fragmentLecturer)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentLecturer, fragmentTag)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

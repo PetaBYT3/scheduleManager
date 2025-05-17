@@ -5,28 +5,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.schedule.rt.sync.databinding.FragmentInputBinding
+import com.schedule.rt.sync.databinding.FragmentSelectInputBinding
 
-class FragmentInput() : Fragment() {
+class FragmentSelectInput() : Fragment() {
 
-    private lateinit var binding: FragmentInputBinding
+    private var _binding: FragmentSelectInputBinding? = null
+    private val binding get() = _binding!!
 
-    var onViewCreated: ((FragmentInputBinding) -> Unit)? = null
-    var onStart: (() -> Unit)? = null
-    var onDestroyView: (() -> Unit)? = null
+    var onViewCreated: ((FragmentSelectInputBinding) -> Unit)? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentInputBinding.inflate(inflater, container, false)
+        _binding = FragmentSelectInputBinding.inflate(inflater, container, false)
         return binding.root
-    }
-
-    override fun onStart() {
-        super.onStart()
-        onStart?.invoke()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -37,6 +31,6 @@ class FragmentInput() : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        onDestroyView?.invoke()
+        _binding = null
     }
 }

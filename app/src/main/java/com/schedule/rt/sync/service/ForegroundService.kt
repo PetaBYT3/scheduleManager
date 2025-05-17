@@ -5,21 +5,24 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.dataclass.DataClassCourse
+import com.schedule.rt.sync.dataclass.DataClassUser
 import com.schedule.rt.sync.userpreferences.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,8 +39,9 @@ class ForegroundService : Service() {
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     private var isForegroundNotificationActive = false
     private val notificationManager by lazy { getSystemService(NotificationManager::class.java) }
-    private val settingsPreferences by lazy { SettingsPreferences(applicationContext) }
+    private val settingsPreferences by lazy { SettingsPreferences(this) }
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val notificationGroup = "countdown_group" // Untuk mengelompokkan notifikasi
 
     override fun onCreate() {
         super.onCreate()
@@ -46,10 +50,6 @@ class ForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val uidClasses = intent?.getStringExtra("uidClasses")
-        val uidLecturer = intent?.getStringExtra("uidLecturer")
-        Log.d("ForegroundService", "Service started with uidClasses: $uidClasses, uidLecturer: $uidLecturer")
-
         val dayMap = mapOf(
             "kamis" to "Thursday",
             "senin" to "Monday",
@@ -63,18 +63,44 @@ class ForegroundService : Service() {
         val dayToday = dayMap[rawDay] ?: rawDay.replaceFirstChar { it.uppercase() }
         Log.d("ForegroundService", "Today is: $dayToday")
 
-        if (uidLecturer != null) {
-            lecturerScheduleListener(uidLecturer, dayToday)
-        } else if (uidClasses != null) {
-            studentScheduleListener(uidClasses, dayToday)
-        }
+        val currentUser = FirebaseAuth.getInstance().currentUser?.uid
+        Log.d("ForegroundService", "Current user UID: $currentUser")
+        if (currentUser != null) {
+            val userDataBaseReference = FirebaseDatabase.getInstance().getReference("users").child(currentUser.toString())
+            userDataBaseReference.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val getUser = snapshot.getValue(DataClassUser::class.java)
+                        Log.d("ForegroundService", "User data retrieved: $getUser")
+                        val uidLecturer = getUser?.uidLecturer
+                        val uidClasses = getUser?.uidClasses
+                        if (uidLecturer != null) {
+                            lecturerScheduleListener(uidLecturer, dayToday)
+                        } else if (uidClasses != null) {
+                            studentScheduleListener(uidClasses, dayToday)
+                        }
+                    }
+                }
 
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("ForegroundService", "Firebase Error: ${error.message}")
+                }
+            })
+        }
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        stopForegroundService()
+        createServiceNotification()
+    }
+
     private fun startForegroundService() {
-        isForegroundNotificationActive = true
-        startForeground(baseNotificationId, createServiceNotification())
+        if (!isForegroundNotificationActive) {
+            isForegroundNotificationActive = true
+            startForeground(baseNotificationId, createServiceNotification())
+        }
     }
 
     private fun stopForegroundService() {
@@ -196,23 +222,53 @@ class ForegroundService : Service() {
 
     private fun startCountdownNotification(course: DataClassCourse, timeLeftMillis: Long, scheduleKey: String, alarmDelayMinutes: Int) {
         val notificationId = baseNotificationId + scheduleKey.hashCode()
-
-        // Hide foreground notification
-        stopForegroundService()
-
         val totalTimeMillis = TimeUnit.MINUTES.toMillis(alarmDelayMinutes.toLong())
+        var remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(timeLeftMillis)
 
         serviceScope.launch {
-            var remainingMillis = timeLeftMillis
-            while (remainingMillis > 0) {
-                val minutesLeft = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
-                val secondsLeft = TimeUnit.MILLISECONDS.toSeconds(remainingMillis) % 60
-                val progress = (remainingMillis.toFloat() / totalTimeMillis * 100).toInt()
-                Log.d("ForegroundService", "Countdown: ${course.nameCourse}, remaining: ${remainingMillis}ms, progress: $progress%, ID: $notificationId")
+            // Tampilkan notifikasi awal
+            val initialMinutesLeft = remainingMinutes
+            val initialProgress = (timeLeftMillis.toFloat() / totalTimeMillis * 100).toInt()
+            Log.d("ForegroundService", "Initial Countdown: ${course.nameCourse}, minutes left: $initialMinutesLeft, progress: $initialProgress%, ID: $notificationId")
 
-                val builder = NotificationCompat.Builder(this@ForegroundService, channelId)
+            val initialNotification = NotificationCompat.Builder(this@ForegroundService, channelId)
+                .setContentTitle("${course.nameCourse} ${course.sksCourse} SKS")
+                .setContentText("Starts in ${initialMinutesLeft}m")
+                .setSmallIcon(R.drawable.schedule)
+                .setProgress(100, initialProgress, false)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(false)
+                .setGroup(notificationGroup) // Kelompokkan notifikasi
+                .build()
+
+            withContext(Dispatchers.Main) {
+                notificationManager.notify(notificationId, initialNotification)
+            }
+
+            // Mulai countdown per menit
+            while (remainingMinutes > 0) {
+                delay(60000) // Tunggu 1 menit
+                val now = System.currentTimeMillis()
+                val remainingMillis = course.startTime?.let {
+                    val startTime = LocalTime.parse(it, timeFormatter)
+                    val startMillis = startTime.atDate(LocalDate.now())
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                    startMillis - now
+                } ?: 0
+
+                if (remainingMillis <= 0) break
+
+                remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remainingMillis)
+                val progress = (remainingMillis.toFloat() / totalTimeMillis * 100).toInt()
+
+                val countdownNotification = NotificationCompat.Builder(this@ForegroundService, channelId)
                     .setContentTitle("${course.nameCourse} ${course.sksCourse} SKS")
-                    .setContentText("Starts in ${minutesLeft}m ${secondsLeft}s")
+                    .setContentText("Starts in ${remainingMinutes}m")
                     .setSmallIcon(R.drawable.schedule)
                     .setProgress(100, progress, false)
                     .setOngoing(true)
@@ -220,39 +276,41 @@ class ForegroundService : Service() {
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setAutoCancel(false)
+                    .setGroup(notificationGroup) // Kelompokkan notifikasi
+                    .build()
+                START_STICKY
 
                 withContext(Dispatchers.Main) {
-                    notificationManager.notify(notificationId, builder.build())
+                    notificationManager.notify(notificationId, countdownNotification)
                 }
-
-                delay(1000)
-                remainingMillis -= 1000
             }
 
             // Countdown selesai
-            val builder = NotificationCompat.Builder(this@ForegroundService, channelId)
+            val finishedNotification = NotificationCompat.Builder(this@ForegroundService, channelId)
                 .setContentTitle("${course.nameCourse} ${course.sksCourse} SKS")
                 .setContentText("Class is starting now!")
                 .setSmallIcon(R.drawable.schedule)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
+                .setGroup(notificationGroup) // Kelompokkan notifikasi
+                .build()
 
             withContext(Dispatchers.Main) {
-                notificationManager.notify(notificationId, builder.build())
-                // Restore foreground notification
-                startForegroundService()
+                notificationManager.notify(notificationId, finishedNotification)
             }
         }
     }
 
     private fun createNotificationChannel() {
+        val notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val attributes = AudioAttributes.Builder()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 "Pengingat Kuliah",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                setSound(null, null)
+                setSound(notificationSound, null)
                 enableVibration(true)
                 setShowBadge(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -264,21 +322,16 @@ class ForegroundService : Service() {
     }
 
     private fun createServiceNotification(): Notification {
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Foreground Service Active")
-            .setContentText("Monitoring incoming schedules. Incoming schedules will be notified")
+        val serviceNotification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Service Active")
+            .setContentText("Foreground service is monitoring incoming schedules. Incoming schedules will be notified")
             .setSmallIcon(R.drawable.schedule)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .build()
+        return serviceNotification
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        serviceScope.cancel()
-        stopForegroundService()
-        Log.d("ForegroundService", "Service destroyed")
-        super.onDestroy()
-    }
 }

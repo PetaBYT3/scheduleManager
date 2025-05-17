@@ -14,8 +14,6 @@ import com.schedule.rt.sync.R
 import com.schedule.rt.sync.adapter.AdapterCheckSchedule
 import com.schedule.rt.sync.databinding.FragmentInputScheduleBinding
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeTopFragmentAndShowPrevious
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
@@ -53,7 +51,7 @@ class FragmentInputSchedule : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.toolBar.setNavigationOnClickListener {
-            removeTopFragmentAndShowPrevious()
+            requireActivity().supportFragmentManager.popBackStack()
         }
 
         actionbar()
@@ -197,7 +195,7 @@ class FragmentInputSchedule : Fragment() {
                 when (it) {
                     "Success" -> {
                         showToastFragment(FragmentToast(R.drawable.check, "Schedule Added"))
-                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        requireActivity().supportFragmentManager.popBackStack()
                     }
                     "Fail" -> {
                         showToastFragment(FragmentToast(R.drawable.fail, "Schedule Failed"))

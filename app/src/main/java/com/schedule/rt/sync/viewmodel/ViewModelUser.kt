@@ -5,6 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -50,7 +54,17 @@ class ViewModelUser(application: Application) : AndroidViewModel(application) {
                     result.value = "Fail"
                 }
             }.addOnFailureListener {
-                result.value = "Error"
+                when (it) {
+                    is FirebaseAuthInvalidCredentialsException -> {
+                        result.value = "Wrong"
+                    }
+                    is FirebaseAuthInvalidUserException -> {
+                        result.value = "Not Exist"
+                    }
+                    else -> {
+                        result.value = "Error"
+                    }
+                }
             }
         }
         return result
@@ -81,9 +95,27 @@ class ViewModelUser(application: Application) : AndroidViewModel(application) {
                                 result.value = "Error"
                             }
                         }
+                    } else {
+                        result.value = "Error"
                     }
                 }.addOnFailureListener {
-                    result.value = "Error"
+                    when (it) {
+                        is FirebaseAuthWeakPasswordException -> {
+                            result.value = "Password Short"
+                        }
+
+                        is FirebaseAuthInvalidCredentialsException -> {
+                            result.value = "Invalid Email"
+                        }
+
+                        is FirebaseAuthUserCollisionException -> {
+                            result.value = "Used Email"
+                        }
+
+                        else -> {
+                            result.value = "Error"
+                        }
+                    }
                 }
             }
         }
@@ -170,38 +202,6 @@ class ViewModelUser(application: Application) : AndroidViewModel(application) {
                 result.value = "Fail"
             }
         }
-        return result
-    }
-
-    fun editName(nameUser: String?): LiveData<String?> {
-        val result = MutableLiveData<String?>()
-        val currentUser = firebaseAuth.currentUser?.uid
-        val updateChildren = mapOf(
-            "nameUser" to nameUser
-        )
-        databaseReference.child(currentUser.toString()).updateChildren(updateChildren).addOnSuccessListener {
-            result.value = "Success"
-        }.addOnFailureListener {
-            result.value = "Error"
-        }
-
-         return result
-    }
-
-    fun editData(dataUser: DataClassUser?): LiveData<String?> {
-        val result = MutableLiveData<String?>()
-        val currentUser = firebaseAuth.currentUser?.uid
-        val updateChildren = mapOf(
-            "uidMajor" to dataUser?.uidMajor,
-            "uidLevel" to dataUser?.uidLevel,
-            "uidClasses" to dataUser?.uidClasses
-        )
-        databaseReference.child(currentUser.toString()).updateChildren(updateChildren).addOnSuccessListener {
-            result.value = "Success"
-        }.addOnFailureListener {
-            result.value = "Error"
-        }
-
         return result
     }
 }

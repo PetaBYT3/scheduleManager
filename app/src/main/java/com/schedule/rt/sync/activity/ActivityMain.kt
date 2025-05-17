@@ -1,6 +1,7 @@
 package com.schedule.rt.sync.activity
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -64,6 +65,7 @@ class ActivityMain : AppCompatActivity() {
             }
         }
 
+        foregroundService()
 
         drawerLayout = binding.dlActivityMain
         val navigationView: NavigationView = binding.navigationView
@@ -76,19 +78,6 @@ class ActivityMain : AppCompatActivity() {
 
         vmUser.getUser().observe(this) {
             val uidLecturer = it?.uidLecturer
-
-            lifecycleScope.launch {
-                settingsPreferences.getForegroundServiceStatus.collect { foregroundStatus ->
-                    if (foregroundStatus) {
-                        val serviceIntent = Intent(this@ActivityMain, ForegroundService::class.java)
-                        serviceIntent.putExtra("uidLecturer", uidLecturer)
-                        serviceIntent.putExtra("uidClasses", it?.uidClasses)
-                        startForegroundService(serviceIntent)
-                    } else {
-                        stopService(Intent(this@ActivityMain, ForegroundService::class.java))
-                    }
-                }
-            }
 
             if (uidLecturer != null) {
                 vmLecturer.getLecturerByUid(uidLecturer).observe(this) {
@@ -166,7 +155,7 @@ class ActivityMain : AppCompatActivity() {
         drawerLayout.openDrawer(GravityCompat.START)
     }
 
-    private fun replaceFragment(fragment: Fragment, menuItemUid: Int? = null) {
+    fun replaceFragment(fragment: Fragment, menuItemUid: Int? = null) {
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.mainFragmentContainer, fragment)
             commit()
@@ -182,4 +171,28 @@ class ActivityMain : AppCompatActivity() {
         return currentFragment != null && currentFragment::class.java == fragmentClass
     }
 
+    private fun foregroundService() {
+        val serviceIntent = Intent(this@ActivityMain, ForegroundService::class.java)
+        lifecycleScope.launch {
+            settingsPreferences.getForegroundServiceStatus.collect { foregroundStatus ->
+                if (foregroundStatus == true) {
+                    startForegroundServiceNow(serviceIntent)
+                } else {
+                    stopService(serviceIntent)
+                }
+            }
+        }
+    }
+
+    private fun startForegroundServiceNow(serviceIntent: Intent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
 }

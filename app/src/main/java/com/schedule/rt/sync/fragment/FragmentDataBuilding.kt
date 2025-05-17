@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
@@ -13,8 +14,6 @@ import com.schedule.rt.sync.databinding.FragmentDataBuildingBinding
 import com.schedule.rt.sync.dataclass.DataClassBuilding
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
@@ -28,6 +27,8 @@ class FragmentDataBuilding : Fragment() {
 
     private val vmBuilding : ViewModelBuilding by activityViewModels()
     private val vmRoom : ViewModelRoom by activityViewModels()
+
+    private val fragmentTag = "dataBuilding"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +78,7 @@ class FragmentDataBuilding : Fragment() {
                     onViewCreated = { inputBinding ->
 
                         inputBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         inputBinding.toolBar.title = "Edit Building"
@@ -98,7 +99,7 @@ class FragmentDataBuilding : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Exist" -> {
                                         showToastFragment(FragmentToast(R.drawable.copy, "Building Exist"))
@@ -111,7 +112,8 @@ class FragmentDataBuilding : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentInput)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
             },
             onSecondClick = {
                 val uidBuilding = it.uidBuilding
@@ -119,7 +121,7 @@ class FragmentDataBuilding : Fragment() {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Building"
@@ -138,7 +140,7 @@ class FragmentDataBuilding : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     else -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Something Went Wrong"))
@@ -148,11 +150,13 @@ class FragmentDataBuilding : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             },
             onNextClick = {
                 val uidBuilding = it.uidBuilding
                 vmRoom.uidBuildingReference(uidBuilding)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
                 replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentDataRoom(), null)
             }
         )
@@ -176,7 +180,7 @@ class FragmentDataBuilding : Fragment() {
             onViewCreated = { inputBinding ->
 
                 inputBinding.toolBar.setNavigationOnClickListener {
-                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 inputBinding.toolBar.title = "Add Building"
@@ -195,7 +199,7 @@ class FragmentDataBuilding : Fragment() {
                             when (it) {
                                 "Success" -> {
                                     showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    requireActivity().supportFragmentManager.popBackStack()
                                 }
                                 "Exist" -> {
                                     showToastFragment(FragmentToast(R.drawable.copy, "Building Already Exist"))
@@ -211,12 +215,13 @@ class FragmentDataBuilding : Fragment() {
                 }
             }
         }
-        addFragmentWithoutBackStack(fragmentInput)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

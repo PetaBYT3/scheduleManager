@@ -8,7 +8,6 @@
     android:layout_marginStart="10dp"
     android:layout_marginEnd="10dp"
     android:layout_marginBottom="10dp"
-    android:animateLayoutChanges="true"
     android:padding="15dp"
     android:background="@drawable/bg_card">
 
@@ -123,7 +122,6 @@
 
             <TextView
                 android:id="@+id/tvCountDown"
-
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_width="wrap_content"

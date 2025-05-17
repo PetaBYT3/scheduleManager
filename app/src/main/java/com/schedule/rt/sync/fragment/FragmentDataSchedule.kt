@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
@@ -23,9 +24,7 @@ import com.schedule.rt.sync.fragment.day.FragmentDataSunday
 import com.schedule.rt.sync.fragment.day.FragmentDataThursday
 import com.schedule.rt.sync.fragment.day.FragmentDataTuesday
 import com.schedule.rt.sync.fragment.day.FragmentDataWednesday
-import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeTopFragmentAndShowPrevious
+import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
@@ -59,6 +58,8 @@ class FragmentDataSchedule(
     private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLevel: ViewModelLevel by activityViewModels()
     private val vmClasses: ViewModelClasses by activityViewModels()
+
+    private val fragmentTag = "dataSchedule"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -263,7 +264,7 @@ class FragmentDataSchedule(
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Schedule"
@@ -326,7 +327,7 @@ class FragmentDataSchedule(
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Schedule Deleted"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Fail" -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
@@ -336,7 +337,8 @@ class FragmentDataSchedule(
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         )
 
@@ -359,7 +361,7 @@ class FragmentDataSchedule(
             onViewCreated = { selectCourse ->
 
                 selectCourse.toolBar.setNavigationOnClickListener {
-                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 val uidLevel = vmClasses.uidLevelReference.value
@@ -395,7 +397,7 @@ class FragmentDataSchedule(
                     val fragmentCard = FragmentCard().apply {
                         onViewCreated = { cardBinding ->
                             cardBinding.toolBar.setNavigationOnClickListener {
-                                removeTopFragmentAndShowPrevious()
+                                requireActivity().supportFragmentManager.popBackStack()
                             }
 
                             cardBinding.layoutMessage.visibility = View.VISIBLE
@@ -483,29 +485,31 @@ class FragmentDataSchedule(
                                 vmCourse.sendCourseUid(uidCourse)
                                 vmLecturer.sendLecturerUid(uidLecturer)
                                 val fragmentInputSchedule = FragmentInputSchedule()
-                                addFragmentWithoutBackStack(fragmentInputSchedule)
+                                requireActivity().supportFragmentManager.popBackStack()
+                                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInputSchedule, fragmentTag)
                             }
                         }
                     }
-                    addFragmentWithoutBackStack(fragmentCard)
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
                 } else if (uidLecturer == null) {
                     showToastFragment(FragmentToast(R.drawable.fail, "This Course Does Not Have Lecturer"))
                 } else {
                     vmCourse.sendCourseUid(uidCourse)
                     vmLecturer.sendLecturerUid(uidLecturer)
                     val fragmentInputSchedule = FragmentInputSchedule()
-                    addFragmentWithoutBackStack(fragmentInputSchedule)
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInputSchedule, fragmentTag)
                 }
             }
         }
-        addFragmentWithoutBackStack(fragmentCourse)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCourse, fragmentTag)
     }
 
     private fun editSchedule(uidLecturer: String?) {
         val fragmentCourse = FragmentSelectCourse().apply {
             onViewCreated = { selectCourse ->
                 selectCourse.toolBar.setNavigationOnClickListener {
-                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 rvCourseByLecturer(uidLecturer)
@@ -527,7 +531,7 @@ class FragmentDataSchedule(
                     val fragmentCard = FragmentCard().apply {
                         onViewCreated = { cardBinding ->
                             cardBinding.toolBar.setNavigationOnClickListener {
-                                removeTopFragmentAndShowPrevious()
+                                requireActivity().supportFragmentManager.popBackStack()
                             }
 
                             cardBinding.layoutMessage.visibility = View.VISIBLE
@@ -615,27 +619,29 @@ class FragmentDataSchedule(
                                 vmCourse.sendCourseUid(uidCourse)
                                 vmLecturer.sendLecturerUid(uidLecturer)
                                 val fragmentInputSchedule = FragmentInputSchedule()
-                                addFragmentWithoutBackStack(fragmentInputSchedule)
+                                requireActivity().supportFragmentManager.popBackStack()
+                                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInputSchedule, fragmentTag)
                             }
                         }
                     }
-                    addFragmentWithoutBackStack(fragmentCard)
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
                 } else if (uidLecturer == null) {
                     showToastFragment(FragmentToast(R.drawable.fail, "This Course Does Not Have Lecturer"))
                 } else {
                     vmCourse.sendCourseUid(uidCourse)
                     vmLecturer.sendLecturerUid(uidLecturer)
                     val fragmentInputSchedule = FragmentInputSchedule()
-                    addFragmentWithoutBackStack(fragmentInputSchedule)
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInputSchedule, fragmentTag)
                 }
             }
         }
-        addFragmentWithoutBackStack(fragmentCourse)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCourse, fragmentTag)
     }
 
     override fun onDestroyView() {
-        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
         super.onDestroyView()
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

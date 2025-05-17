@@ -95,6 +95,10 @@ class AdapterCourse(
         holder.tvData4.visibility = if (tvData4 == true) View.VISIBLE else View.GONE
         holder.tvData5.visibility = if (tvData5 == true) View.VISIBLE else View.GONE
 
+
+        holder.btnFirst.visibility = if (btnFirst == true) View.VISIBLE else View.GONE
+        holder.btnSecond.visibility = if (btnSecond == true) View.VISIBLE else View.GONE
+
         val currentItem = dataClassCourse[position]
         holder.tvTittle.text = currentItem.nameCourse
         holder.tvData1.text = buildString {
@@ -179,8 +183,10 @@ class AdapterCourse(
             if (day != null && building != null && room != null && roomDay != null && startTime != null && endTime != null) {
                 holder.btnNext.visibility = View.VISIBLE
                 holder.ivNext.setImageResource(R.drawable.delete_schedule)
+                holder.btnFirst.visibility = View.GONE
             } else {
                 holder.btnNext.visibility = View.GONE
+                holder.btnFirst.visibility = View.VISIBLE
             }
         }
 
@@ -199,9 +205,6 @@ class AdapterCourse(
             holder.btnNext.visibility = View.VISIBLE
             holder.ivNext.setImageResource(R.drawable.add_schedule)
         }
-
-        holder.btnFirst.visibility = if (btnFirst == true) View.VISIBLE else View.GONE
-        holder.btnSecond.visibility = if (btnSecond == true) View.VISIBLE else View.GONE
 
         holder.btnFirst.setOnClickListener {
             onFirstClick?.invoke(currentItem)

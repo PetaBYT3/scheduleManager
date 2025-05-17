@@ -65,10 +65,24 @@ class FragmentSignUp : Fragment() {
                         )
                         binding.pbYes.visibility = View.INVISIBLE
                     }
-                    "Failed" -> {
+                    "Used Email" -> {
                         replaceToastFragment(
                             R.id.startToastContainer,
-                            FragmentToast(R.drawable.fail, "Something Went Wrong")
+                            FragmentToast(R.drawable.fail, "Email Already Used")
+                        )
+                        binding.pbYes.visibility = View.INVISIBLE
+                    }
+                    "Invalid Email" -> {
+                        replaceToastFragment(
+                            R.id.startToastContainer,
+                            FragmentToast(R.drawable.fail, "Please Enter Valid Email")
+                        )
+                        binding.pbYes.visibility = View.INVISIBLE
+                    }
+                    "Password Short" -> {
+                        replaceToastFragment(
+                            R.id.startToastContainer,
+                            FragmentToast(R.drawable.fail, "Password Too Short, Must Be 6 Character At Least")
                         )
                         binding.pbYes.visibility = View.INVISIBLE
                     }
@@ -86,7 +100,7 @@ class FragmentSignUp : Fragment() {
                         )
                         binding.pbYes.visibility = View.INVISIBLE
                     }
-                    "Error" -> {
+                    else -> {
                         replaceToastFragment(
                             R.id.startToastContainer,
                             FragmentToast(R.drawable.fail, "Something Went Wrong")

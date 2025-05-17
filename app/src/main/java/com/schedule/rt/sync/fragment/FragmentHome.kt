@@ -1,12 +1,17 @@
 package com.schedule.rt.sync.fragment
 
 import android.Manifest
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
@@ -26,6 +31,7 @@ import com.schedule.rt.sync.viewmodel.ViewModelMajor
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 import com.schedule.rt.sync.viewmodel.ViewModelSchedule
 import com.schedule.rt.sync.viewmodel.ViewModelUser
+import kotlinx.coroutines.launch
 
 class FragmentHome : Fragment() {
 
@@ -82,6 +88,8 @@ class FragmentHome : Fragment() {
             (requireActivity() as ActivityMain).btnDrawer()
         }
 
+        permissionStatus()
+
         val permissionManager = PermissionManager(
             this,
             onAllGranted = {
@@ -92,16 +100,11 @@ class FragmentHome : Fragment() {
 
         val permissionToRequest = mutableListOf(
             Manifest.permission.INTERNET,
-            Manifest.permission.POST_NOTIFICATIONS,
             Manifest.permission.FOREGROUND_SERVICE,
             Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC
         )
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            permissionToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissionToRequest.add(Manifest.permission.FOREGROUND_SERVICE)
             permissionToRequest.add(Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC)
         }
@@ -237,6 +240,44 @@ class FragmentHome : Fragment() {
             binding.btnAllSchedule.setOnClickListener {
                 replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentLecturerSchedule(), null)
             }
+        }
+    }
+
+    private fun permissionStatus() {
+        binding.warningNotification.setOnClickListener {
+            (requireActivity() as ActivityMain).replaceFragment(FragmentSettings(), R.id.btnSettings)
+        }
+
+        binding.warningForeground.setOnClickListener {
+            (requireActivity() as ActivityMain).replaceFragment(FragmentSettings(), R.id.btnSettings)
+        }
+
+        binding.warningBattery.setOnClickListener {
+            (requireActivity() as ActivityMain).replaceFragment(FragmentSettings(), R.id.btnSettings)
+        }
+
+        val notificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_NOTIFICATION_POLICY)
+        }
+        if (notificationPermission == android.content.pm.PackageManager.PERMISSION_DENIED) {
+            binding.warningNotification.visibility = View.VISIBLE
+        }
+
+        lifecycleScope.launch {
+            settingsPreferences.getForegroundServiceStatus.collect {
+                if (it == false) {
+                    binding.warningForeground.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        val powerManager = requireActivity().getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (powerManager.isIgnoringBatteryOptimizations(requireContext().packageName)) {
+            binding.warningBattery.visibility = View.GONE
+        } else {
+            binding.warningBattery.visibility = View.VISIBLE
         }
     }
 

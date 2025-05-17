@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.asFlow
@@ -15,17 +16,11 @@ import com.schedule.rt.sync.R
 import com.schedule.rt.sync.adapter.AdapterCourse
 import com.schedule.rt.sync.databinding.FragmentDataCourseBinding
 import com.schedule.rt.sync.dataclass.DataClassBuilding
-import com.schedule.rt.sync.dataclass.DataClassClasses
 import com.schedule.rt.sync.dataclass.DataClassCourse
-import com.schedule.rt.sync.dataclass.DataClassLevel
-import com.schedule.rt.sync.dataclass.DataClassMajor
 import com.schedule.rt.sync.dataclass.DataClassRoom
 import com.schedule.rt.sync.function.capitalizeAfterDot
 import com.schedule.rt.sync.function.capitalizeEachWord
-import com.schedule.rt.sync.objectsingleton.DialogUtil.addFragmentWithoutBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.hideKeyboard
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeFragmentFromContainer
-import com.schedule.rt.sync.objectsingleton.DialogUtil.removeTopFragmentAndShowPrevious
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
@@ -55,6 +50,8 @@ class FragmentDataCourse : Fragment() {
     private val vmCourse: ViewModelCourse by activityViewModels()
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom: ViewModelRoom by activityViewModels()
+
+    private val fragmentTag = "dataCourse"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +97,8 @@ class FragmentDataCourse : Fragment() {
         }
 
         binding.btnEditSchedule.setOnClickListener {
-            replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentBuilding(btnAddSchedule = true), "mainContainer")
+            requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+            replaceFragmentWithBackStack(R.id.mainFragmentContainer, FragmentBuilding(btnAddSchedule = true), null)
         }
 
         binding.btnAdd.setOnClickListener {
@@ -108,6 +106,8 @@ class FragmentDataCourse : Fragment() {
         }
 
         recyclerView()
+
+        vmData.sendUidLecturer(null)
     }
 
     private fun recyclerView() {
@@ -123,191 +123,105 @@ class FragmentDataCourse : Fragment() {
             btnSecond = true,
             onFirstClick = {
                 val uidCourse = it.uidCourse
-                val day = it.day
-                val building = it.uidBuilding
-                val room = it.uidRoom
-                val roomDay = it.uidRoomDay
-                val startTime = it.startTime
-                val endTime = it.endTime
                 val uidLecturer = it.uidLecturer
+                val fragmentInput = FragmentInput().apply {
+                    onViewCreated = { inputBinding ->
 
-                if (day != null && building != null && room != null && roomDay != null && startTime != null && endTime != null) {
-                    val fragmentCard = FragmentCard().apply {
-                        onViewCreated = { cardBinding ->
+                        inputBinding.toolBar.setNavigationOnClickListener {
+                            requireActivity().supportFragmentManager.popBackStack()
+                        }
 
-                            cardBinding.toolBar.setNavigationOnClickListener {
-                                removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                        inputBinding.tiSecond.visibility = View.VISIBLE
+                        inputBinding.layoutDropDown.visibility = View.VISIBLE
+
+                        inputBinding.toolBar.title = "Edit Course"
+                        inputBinding.tiFirst.hint = "Course Name"
+                        inputBinding.tiSecond.hint = "SKS"
+                        inputBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
+                        inputBinding.tiDropDown.hint = "Choose Lecturer"
+                        inputBinding.ivYes.setImageResource(R.drawable.edit)
+                        inputBinding.tvYes.text = "Edit"
+
+                        vmCourse.getCourseByUid(uidCourse.toString()).observe(viewLifecycleOwner) {
+                            inputBinding.etFirst.setText(it?.nameCourse)
+                            inputBinding.etSecond.setText(it?.sksCourse)
+                        }
+
+                        vmData.uidLecturer.observe(viewLifecycleOwner) {
+                            if (it == null) {
+                                vmData.sendUidLecturer(uidLecturer)
                             }
+                        }
 
-                            cardBinding.layoutMessage.visibility = View.VISIBLE
+                        vmData.uidLecturer.observe(viewLifecycleOwner) {
+                            vmLecturer.getLecturerByUid(it?.toString()).observe(viewLifecycleOwner) {
+                                inputBinding.etDropDown.setText(it?.nameLecturer)
+                            }
+                        }
 
-                            cardBinding.toolBar.title = "Course Already Have Schedule"
-                            cardBinding.ivYes.setImageResource(R.drawable.close)
-                            cardBinding.tvYes.text = "Ok"
-                            cardBinding.tvMessage.text = "This Course Already Have A Schedule, Delete Schedule First To Edit This Coure"
+                        inputBinding.btnDropDown.setOnClickListener {
+                            hideKeyboard(inputBinding.root)
+                            val fragmentLecturer = FragmentSelectLecturer().apply {
+                                onViewCreated = { fragmentSelect ->
 
-                            vmCourse.getCourseByUid(uidCourse.toString()).observe(viewLifecycleOwner) {
-                                cardBinding.tvTitle.text = buildString {
-                                    append(it?.nameCourse)
-                                }
-                                cardBinding.tvData1.text = buildString {
-                                    append(it?.sksCourse)
-                                    append(" SKS")
-                                }
-
-                                val getMajor = vmMajor.getMajorByUid(it?.uidMajor.toString())
-                                val getLevel = vmLevel.getLevelByUid(it?.uidLevel.toString())
-                                val getClasses = vmClasses.getClassesByUid(it?.uidClasses.toString())
-                                val combinedMajor = MediatorLiveData<Triple<DataClassMajor?, DataClassLevel?, DataClassClasses?>>()
-
-                                fun dataMajorLevelClass() {
-                                    val dataMajor = getMajor.value
-                                    val dataLevel = getLevel.value
-                                    val dataClasses = getClasses.value
-                                    combinedMajor.value = Triple(dataMajor, dataLevel, dataClasses)
-                                }
-
-                                combinedMajor.addSource(getMajor) { dataMajorLevelClass() }
-                                combinedMajor.addSource(getLevel) { dataMajorLevelClass() }
-                                combinedMajor.addSource(getClasses) { dataMajorLevelClass() }
-
-                                combinedMajor.observe(viewLifecycleOwner) { (dataMajor, dataLevel, dataClasses) ->
-                                    cardBinding.tvData2.text = buildString {
-                                        append("${dataMajor?.nameMajor}, ")
-                                        append("Level ${dataLevel?.level}, ")
-                                        append("Class ${dataClasses?.nameClasses}")
+                                    fragmentSelect.toolBar.setNavigationOnClickListener {
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
+
+                                    recyclerView(
+                                        tvData1 = true,
+                                        tvData2 = false,
+                                        tvData3 = false,
+                                        tvData4 = false,
+                                        tvData5 = false
+                                    )
                                 }
-
-                                val uidLecturer = it?.uidLecturer.toString()
-                                vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
-                                    cardBinding.tvData3.text = buildString {
-                                        append(it?.nameLecturer)
-                                    }
+                                onAddClick = {
+                                    val uidLecturer = it.uidLecturer
+                                    vmData.sendUidLecturer(uidLecturer)
+                                    requireActivity().supportFragmentManager.popBackStack()
                                 }
+                            }
+                            replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentLecturer, fragmentTag)
+                        }
 
-                                val getBuilding = vmBuilding.getBuildingByUid(it?.uidBuilding.toString())
-                                val getRoom = vmRoom.getRoomByUid(it?.uidRoom.toString())
-                                val combinedBuilding = MediatorLiveData<Pair<DataClassBuilding?, DataClassRoom?>>()
+                        inputBinding.btnYes.setOnClickListener {
+                            val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
+                            val etSecond = inputBinding.etSecond.text.toString()
+                            val dataCourse = DataClassCourse(
+                                nameCourse = etFirst,
+                                sksCourse = etSecond,
+                                uidCourse = uidCourse,
+                                uidLecturer = vmData.uidLecturer.value
+                            )
 
-                                fun dataBuildingRoom() {
-                                    val dataBuilding = getBuilding.value
-                                    val dataRoom = getRoom.value
-                                    combinedBuilding.value = Pair(dataBuilding, dataRoom)
-                                }
-
-                                combinedBuilding.addSource(getBuilding) { dataBuildingRoom() }
-                                combinedBuilding.addSource(getRoom) { dataBuildingRoom() }
-
-                                combinedBuilding.observe(viewLifecycleOwner) { (dataBuilding, dataRoom) ->
-                                    if (dataBuilding != null && dataRoom != null) {
-                                        cardBinding.tvData4.text = buildString {
-                                            append("Building ${dataBuilding?.nameBuilding}, ")
-                                            append("Room ${dataRoom?.nameRoom}")
+                            if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
+                                vmCourse.editCourse(dataCourse).observe(viewLifecycleOwner) {
+                                    when (it) {
+                                        "Success" -> {
+                                            showToastFragment(FragmentToast(R.drawable.check, "Success"))
+                                            requireActivity().supportFragmentManager.popBackStack()
+                                        }
+                                        "Exist" -> {
+                                            showToastFragment(FragmentToast(R.drawable.copy, "Course Name Already Exist"))
+                                        }
+                                        "Fail" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Fail"))
                                         }
                                     }
                                 }
-
-                                if (it?.startTime != null && it.endTime != null) {
-                                    cardBinding.tvData5.text = buildString {
-                                        append(it.startTime)
-                                        append(" - ")
-                                        append(it.endTime)
-                                    }
-                                }
-                            }
-
-                            cardBinding.btnYes.setOnClickListener {
-                                removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            } else {
+                                showToastFragment(FragmentToast(R.drawable.fail, "Fill All Data"))
                             }
                         }
                     }
-                    addFragmentWithoutBackStack(fragmentCard)
-                } else {
-                    val fragmentInput = FragmentInput().apply {
-                        onViewCreated = { inputBinding ->
 
-                            inputBinding.toolBar.setNavigationOnClickListener {
-                                removeFragmentFromContainer(R.id.mainBottomSheetContainer)
-                            }
-
-                            inputBinding.tiSecond.visibility = View.VISIBLE
-                            inputBinding.layoutDropDown.visibility = View.VISIBLE
-
-                            inputBinding.toolBar.title = "Edit Course"
-                            inputBinding.tiFirst.hint = "Course Name"
-                            inputBinding.tiSecond.hint = "SKS"
-                            inputBinding.etSecond.inputType = InputType.TYPE_CLASS_NUMBER
-                            inputBinding.tiDropDown.hint = "Choose Lecturer"
-                            inputBinding.ivYes.setImageResource(R.drawable.edit)
-                            inputBinding.tvYes.text = "Edit"
-
-                            vmCourse.getCourseByUid(uidCourse.toString()).observe(viewLifecycleOwner) {
-                                inputBinding.etFirst.setText(it?.nameCourse)
-                                inputBinding.etSecond.setText(it?.sksCourse)
-                            }
-
-                            vmData.sendUidLecturer(uidLecturer)
-
-                            vmData.uidLecturer.observe(viewLifecycleOwner) {
-                                vmLecturer.getLecturerByUid(it?.toString()).observe(viewLifecycleOwner) {
-                                    inputBinding.etDropDown.setText(it?.nameLecturer)
-                                }
-                            }
-
-                            inputBinding.btnDropDown.setOnClickListener {
-                                val fragmentLecturer = FragmentSelectLecturer().apply {
-                                    onViewCreated = { fragmentSelect ->
-                                        fragmentSelect.toolBar.setNavigationOnClickListener {
-                                            removeTopFragmentAndShowPrevious()
-                                        }
-                                    }
-                                    onAddClick = {
-                                        val uidLecturer = it.uidLecturer
-                                        vmData.sendUidLecturer(uidLecturer)
-                                        removeTopFragmentAndShowPrevious()
-                                    }
-                                }
-                                addFragmentWithoutBackStack(fragmentLecturer)
-                            }
-
-                            inputBinding.btnYes.setOnClickListener {
-                                val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
-                                val etSecond = inputBinding.etSecond.text.toString()
-                                val dataCourse = DataClassCourse(
-                                    nameCourse = etFirst,
-                                    sksCourse = etSecond,
-                                    uidCourse = uidCourse,
-                                    uidLecturer = vmData.uidLecturer.value
-                                )
-
-                                if (etFirst.isNotEmpty() && etSecond.isNotEmpty()) {
-                                    vmCourse.editCourse(dataCourse).observe(viewLifecycleOwner) {
-                                        when (it) {
-                                            "Success" -> {
-                                                showToastFragment(FragmentToast(R.drawable.check, "Success"))
-                                                removeFragmentFromContainer(R.id.mainBottomSheetContainer)
-                                            }
-                                            "Exist" -> {
-                                                showToastFragment(FragmentToast(R.drawable.copy, "Course Name Already Exist"))
-                                            }
-                                            "Fail" -> {
-                                                showToastFragment(FragmentToast(R.drawable.fail, "Fail"))
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    showToastFragment(FragmentToast(R.drawable.fail, "Fill All Data"))
-                                }
-                            }
-                        }
-
-                        onDestroyView = {
-                            vmData.sendUidLecturer(null)
-                        }
+                    onDestroyView = {
+                        vmData.sendUidLecturer(null)
                     }
-                    addFragmentWithoutBackStack(fragmentInput)
                 }
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
             },
             onSecondClick = {
                 val uidCourse = it.uidCourse
@@ -315,7 +229,7 @@ class FragmentDataCourse : Fragment() {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Course"
@@ -374,7 +288,7 @@ class FragmentDataCourse : Fragment() {
                                 when (it) {
                                     "Succes" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Success"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Fail" -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Fail"))
@@ -384,14 +298,15 @@ class FragmentDataCourse : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             },
             onNextClick = {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
                         cardBinding.toolBar.setNavigationOnClickListener {
-                            removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
 
                         cardBinding.toolBar.title = "Delete Schedule"
@@ -457,7 +372,7 @@ class FragmentDataCourse : Fragment() {
                                 when (it) {
                                     "Success" -> {
                                         showToastFragment(FragmentToast(R.drawable.check, "Schedule Deleted"))
-                                        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                        requireActivity().supportFragmentManager.popBackStack()
                                     }
                                     "Fail" -> {
                                         showToastFragment(FragmentToast(R.drawable.fail, "Delete Failed"))
@@ -467,7 +382,8 @@ class FragmentDataCourse : Fragment() {
                         }
                     }
                 }
-                addFragmentWithoutBackStack(fragmentCard)
+                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         )
 
@@ -490,7 +406,7 @@ class FragmentDataCourse : Fragment() {
             onViewCreated = { inputBinding ->
 
                 inputBinding.toolBar.setNavigationOnClickListener {
-                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
 
                 inputBinding.tiSecond.visibility = View.VISIBLE
@@ -516,7 +432,7 @@ class FragmentDataCourse : Fragment() {
                         onViewCreated = { fragmentSelect ->
 
                             fragmentSelect.toolBar.setNavigationOnClickListener {
-                                removeTopFragmentAndShowPrevious()
+                                requireActivity().supportFragmentManager.popBackStack()
                             }
 
                             recyclerView(
@@ -530,10 +446,10 @@ class FragmentDataCourse : Fragment() {
                         onAddClick = {
                             val uidLecturer = it.uidLecturer
                             vmData.sendUidLecturer(uidLecturer)
-                            removeTopFragmentAndShowPrevious()
+                            requireActivity().supportFragmentManager.popBackStack()
                         }
                     }
-                    addFragmentWithoutBackStack(fragmentLecturer)
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentLecturer, fragmentTag)
                 }
 
                 inputBinding.btnYes.setOnClickListener {
@@ -550,7 +466,7 @@ class FragmentDataCourse : Fragment() {
                             when (it) {
                                 "Success" -> {
                                     showToastFragment(FragmentToast(R.drawable.check, "Success"))
-                                    removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+                                    requireActivity().supportFragmentManager.popBackStack()
                                 }
                                 "Exist" -> {
                                     showToastFragment(FragmentToast(R.drawable.copy, "Course Name Already Exist"))
@@ -570,13 +486,14 @@ class FragmentDataCourse : Fragment() {
                 vmData.sendUidLecturer(null)
             }
         }
-        addFragmentWithoutBackStack(fragmentInput)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
+        replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentInput, fragmentTag)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         vmData.btnAddSchedule.value = null
-        removeFragmentFromContainer(R.id.mainBottomSheetContainer)
+        requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
         _binding = null
     }
 }

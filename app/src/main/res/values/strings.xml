@@ -43,6 +43,14 @@
         Note!. Give notification permission to receive notification about incoming schedule from Foreground Services
     </string>
 
+    <string name="settingsForegroundServicesStartDescription">
+        Set this to choose when foreground services will start
+    </string>
+
+    <string name="batteryOptimizationDescription">
+        Disable battery optimization for this app for better foreground services, sometimes Battery Optimization will kill foreground services
+    </string>
+
     <string name="settingsAlarmDelayDescription">
         Set this to customize the delay of incoming schedule notification
     </string>
