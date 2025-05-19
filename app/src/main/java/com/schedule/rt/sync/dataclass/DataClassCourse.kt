@@ -14,7 +14,6 @@ data class DataClassCourse(
     var uidBuilding: String? = null,
     var uidRoom: String? = null,
     var day : String? = null,
-    var uidRoomDay : String? = null,
 
     var startTime: String? = null,
     var endTime: String? = null,

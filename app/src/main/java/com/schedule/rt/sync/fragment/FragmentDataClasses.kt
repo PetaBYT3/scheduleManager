@@ -81,6 +81,9 @@ class FragmentDataClasses() : Fragment() {
     private fun recyclerView() {
         val recyclerView: RecyclerView = binding.rvClasses
         val adapter = AdapterClasses(
+            lifecycleOwner = viewLifecycleOwner,
+            vmCourse = vmCourse,
+            tvData1 = true,
             btnFirst = true,
             btnSecond = true,
             btnNext = true,

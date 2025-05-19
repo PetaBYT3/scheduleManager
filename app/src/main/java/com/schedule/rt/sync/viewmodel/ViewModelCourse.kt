@@ -251,12 +251,27 @@ class ViewModelCourse: ViewModel() {
     fun getCourseSizeByClasses(uidClasses: String): LiveData<Int> {
         val courseSize = MutableLiveData<Int>()
         val ref = databaseReference.orderByChild("uidClasses").equalTo(uidClasses)
-        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+        ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val size = snapshot.childrenCount.toInt()
                 courseSize.value = size
             }
 
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return courseSize
+    }
+
+    fun getCourseSizeByRoom(uidRoom: String?): LiveData<Int> {
+        val courseSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidRoom").equalTo(uidRoom)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val size = snapshot.childrenCount.toInt()
+                courseSize.value = size
+            }
             override fun onCancelled(error: DatabaseError) {
                 TODO("Not yet implemented")
             }

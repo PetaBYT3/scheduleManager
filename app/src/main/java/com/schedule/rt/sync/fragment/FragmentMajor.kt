@@ -12,6 +12,7 @@ import com.schedule.rt.sync.databinding.FragmentMajorBinding
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelData
+import com.schedule.rt.sync.viewmodel.ViewModelLecturer
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
 import com.schedule.rt.sync.viewmodel.ViewModelUser
@@ -28,6 +29,7 @@ class FragmentMajor(
     private val vmUser: ViewModelUser by activityViewModels()
     private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLevel: ViewModelLevel by activityViewModels()
+    private val vmLecturer: ViewModelLecturer by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +67,10 @@ class FragmentMajor(
     private fun recyclerView() {
         val recyclerView: RecyclerView = binding.rvMajor
         val adapter = AdapterMajor(
+            lifecycleOwner = viewLifecycleOwner,
+            vmLevel = vmLevel,
+            vmLecturer = vmLecturer,
+            tvData1 = true,
             btnFirst = false,
             btnSecond = false,
             btnNext = true,

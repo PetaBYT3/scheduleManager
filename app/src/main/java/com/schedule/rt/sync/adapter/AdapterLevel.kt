@@ -6,11 +6,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.dataclass.DataClassLevel
+import com.schedule.rt.sync.viewmodel.ViewModelClasses
 
 class AdapterLevel(
+    private val lifecycleOwner: LifecycleOwner,
+    private val vmClasses: ViewModelClasses,
     private val tvData1: Boolean? = null,
     private val tvData2: Boolean? = null,
     private val tvData3: Boolean? = null,
@@ -46,14 +50,18 @@ class AdapterLevel(
         holder.tvData5.visibility = if (tvData5 == true) View.VISIBLE else View.GONE
 
         val currentItem = dataClassLevel[position]
-        holder.tvTittle.text = buildString {
-            append("Level ")
-            append(currentItem.level)
-        }
+        holder.tvTittle.text = currentItem.level
 
         holder.tvData1.text = buildString {
             append("Semester ")
             append(currentItem.semester)
+        }
+
+        vmClasses.getClassesSizeByLevel(currentItem.uidLevel).observe(lifecycleOwner) {
+            holder.tvData2.text = buildString {
+                append(it)
+                append(" Classes")
+            }
         }
 
         holder.btnFirst.visibility = if (btnFirst == true) View.VISIBLE else View.GONE

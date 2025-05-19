@@ -18,6 +18,8 @@ import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackSt
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelData
+import com.schedule.rt.sync.viewmodel.ViewModelLecturer
+import com.schedule.rt.sync.viewmodel.ViewModelLevel
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
 
 class FragmentDataMajor : Fragment() {
@@ -27,6 +29,8 @@ class FragmentDataMajor : Fragment() {
 
     private val vmData: ViewModelData by activityViewModels()
     private val vmMajor: ViewModelMajor by activityViewModels()
+    private val vmLevel: ViewModelLevel by activityViewModels()
+    private val vmLecturer: ViewModelLecturer by activityViewModels()
 
     private val fragmentTag = "dataMajor"
 
@@ -74,6 +78,10 @@ class FragmentDataMajor : Fragment() {
     private fun rvMajor() {
         val recyclerView: RecyclerView = binding.rvMajor
         val adapter = AdapterMajor(
+            lifecycleOwner = viewLifecycleOwner,
+            vmLevel = vmLevel,
+            vmLecturer = vmLecturer,
+            tvData2 = true,
             btnFirst = true,
             btnSecond = true,
             btnNext = true,

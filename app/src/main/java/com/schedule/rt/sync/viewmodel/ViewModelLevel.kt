@@ -176,4 +176,18 @@ class ViewModelLevel: ViewModel() {
             }
         })
     }
+
+    fun getLevelSizeByMajor(uidMajor: String?): LiveData<Int> {
+        val levelSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                levelSize.value = snapshot.childrenCount.toInt()
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return levelSize
+    }
 }

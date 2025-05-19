@@ -63,6 +63,7 @@ class AdapterCourse(
     private val onFirstClick: ((DataClassCourse) -> Unit)? = null,
     private val onSecondClick: ((DataClassCourse) -> Unit)? = null,
     private val onNextClick: ((DataClassCourse) -> Unit)? = null,
+    private val onGeminiClick: ((DataClassCourse) -> Unit)? = null,
     private val settingsPreferences: SettingsPreferences? = null,
     private val onCountDown: Boolean? = null
 ) : RecyclerView.Adapter<AdapterCourse.ViewHolder>() {
@@ -125,9 +126,9 @@ class AdapterCourse(
                 nameClasses = classes?.nameClasses
             }.collect {
                 holder.tvData2.text = buildString {
-                    append("$nameMajor, ")
-                    append("Level $nameLevel, ")
-                    append("Class $nameClasses")
+                    append("$nameMajor ")
+                    append("$nameLevel ")
+                    append(nameClasses)
                 }
             }
         }
@@ -149,7 +150,7 @@ class AdapterCourse(
             }.collect {
                 if (nameBuilding != null && nameRoom != null) {
                     holder.tvData4.text = buildString {
-                        append("Building $nameBuilding, ")
+                        append("Building $nameBuilding ")
                         append("Room $nameRoom")
                     }
                 } else {
@@ -176,17 +177,18 @@ class AdapterCourse(
             val day = currentItem.day
             val building = currentItem.uidBuilding
             val room = currentItem.uidRoom
-            val roomDay = currentItem.uidRoomDay
             val startTime = currentItem.startTime
             val endTime = currentItem.endTime
 
-            if (day != null && building != null && room != null && roomDay != null && startTime != null && endTime != null) {
+            if (day != null && building != null && room != null && startTime != null && endTime != null) {
                 holder.btnNext.visibility = View.VISIBLE
                 holder.ivNext.setImageResource(R.drawable.delete_schedule)
                 holder.btnFirst.visibility = View.GONE
             } else {
                 holder.btnNext.visibility = View.GONE
                 holder.btnFirst.visibility = View.VISIBLE
+                holder.btnGeminiAi.visibility = View.VISIBLE
+                holder.ivGeminiAi.imageTintList = null
             }
         }
 
@@ -216,6 +218,10 @@ class AdapterCourse(
 
         holder.btnNext.setOnClickListener {
             onNextClick?.invoke(currentItem)
+        }
+
+        holder.btnGeminiAi.setOnClickListener {
+            onGeminiClick?.invoke(currentItem)
         }
 
         if (onCountDown == true) {
@@ -344,6 +350,8 @@ class AdapterCourse(
         val btnSecond: ConstraintLayout = itemView.findViewById(R.id.btnSecond)
         val ivNext: ImageView = itemView.findViewById(R.id.ivNext)
         val btnNext: ConstraintLayout = itemView.findViewById(R.id.btnNext)
+        val btnGeminiAi: ConstraintLayout = itemView.findViewById(R.id.btnGeminiAi)
+        val ivGeminiAi: ImageView = itemView.findViewById(R.id.ivGeminiAi)
         val pbCountDown: ProgressBar = itemView.findViewById(R.id.pbCountDown)
         val layoutCountDown: LinearLayout = itemView.findViewById(R.id.layoutCountDown)
         val tvCountDown: TextView = itemView.findViewById(R.id.tvCountDown)

@@ -105,6 +105,10 @@ class FragmentDataLevel : Fragment() {
     private fun recyclerView() {
         val recyclerView: RecyclerView = binding.rvLevel
         val adapter = AdapterLevel(
+            lifecycleOwner = viewLifecycleOwner,
+            vmClasses = vmClasses,
+            tvData1 = true,
+            tvData2 = true,
             btnFirst = true,
             btnSecond = true,
             btnNext = true,

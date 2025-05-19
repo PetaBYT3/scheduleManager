@@ -93,13 +93,19 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopForegroundService()
-        createServiceNotification()
+        createServiceNotification(
+            title = "Service Stopped",
+            text = "Stop monitoring incoming schedules"
+        )
     }
 
     private fun startForegroundService() {
         if (!isForegroundNotificationActive) {
             isForegroundNotificationActive = true
-            startForeground(baseNotificationId, createServiceNotification())
+            startForeground(baseNotificationId, createServiceNotification(
+                title = "Service Started",
+                text = "Start monitoring incoming schedules, incoming schedule will be notified"
+            ))
         }
     }
 
@@ -238,7 +244,7 @@ class ForegroundService : Service() {
                 .setProgress(100, initialProgress, false)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(false)
                 .setGroup(notificationGroup) // Kelompokkan notifikasi
@@ -273,7 +279,7 @@ class ForegroundService : Service() {
                     .setProgress(100, progress, false)
                     .setOngoing(true)
                     .setOnlyAlertOnce(true)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setAutoCancel(false)
                     .setGroup(notificationGroup) // Kelompokkan notifikasi
@@ -290,7 +296,7 @@ class ForegroundService : Service() {
                 .setContentTitle("${course.nameCourse} ${course.sksCourse} SKS")
                 .setContentText("Class is starting now!")
                 .setSmallIcon(R.drawable.schedule)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setAutoCancel(true)
                 .setGroup(notificationGroup) // Kelompokkan notifikasi
                 .build()
@@ -316,15 +322,13 @@ class ForegroundService : Service() {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
-        } else {
-            Log.d("ForegroundService", "Android version < Oreo, skipping NotificationChannel creation")
         }
     }
 
-    private fun createServiceNotification(): Notification {
+    private fun createServiceNotification(title: String, text: String): Notification {
         val serviceNotification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Service Active")
-            .setContentText("Foreground service is monitoring incoming schedules. Incoming schedules will be notified")
+            .setContentTitle(title)
+            .setContentText(text)
             .setSmallIcon(R.drawable.schedule)
             .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
             .setOngoing(true)

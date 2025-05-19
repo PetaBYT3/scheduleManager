@@ -6,11 +6,17 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.dataclass.DataClassMajor
+import com.schedule.rt.sync.viewmodel.ViewModelLecturer
+import com.schedule.rt.sync.viewmodel.ViewModelLevel
 
 class AdapterMajor(
+    private val lifecycleOwner: LifecycleOwner,
+    private val vmLevel: ViewModelLevel,
+    private val vmLecturer: ViewModelLecturer,
     private val btnFirst: Boolean? = null,
     private val btnSecond: Boolean? = null,
     private val btnNext: Boolean? = null,
@@ -47,6 +53,20 @@ class AdapterMajor(
 
         val currentItem = dataClassMajor[position]
         holder.tvTittle.text = currentItem.nameMajor
+
+        vmLevel.getLevelSizeByMajor(currentItem.uidMajor).observe(lifecycleOwner) {
+            holder.tvData1.text = buildString {
+                append(it.toString())
+                append(" Level")
+            }
+        }
+
+        vmLecturer.getLecturerSizeByMajor(currentItem.uidMajor).observe(lifecycleOwner) {
+            holder.tvData2.text = buildString {
+                append(it.toString())
+                append(" Manager")
+            }
+        }
 
         holder.btnFirst.visibility = if (btnFirst == true) View.VISIBLE else View.GONE
         holder.btnSecond.visibility = if (btnSecond == true) View.VISIBLE else View.GONE

@@ -220,4 +220,18 @@ class ViewModelLecturer: ViewModel() {
         }
         return result
     }
+
+    fun getLecturerSizeByMajor(uidMajor: String?): LiveData<Int> {
+        val lecturerSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidMajorManager").equalTo(uidMajor)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                lecturerSize.value = snapshot.childrenCount.toInt()
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return lecturerSize
+    }
 }

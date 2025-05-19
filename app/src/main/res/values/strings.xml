@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Scheduler</string>
     <string name="default_web_client_id">47910480344-75bjnhhcsj6ehrbjs0vn03u7pd5ij9i9.apps.googleusercontent.com</string>
+    <string name="gemini_api_key">AIzaSyDXE526C52gKhGkL_qHY5254CGGVD6S0hA</string>
+    <string name="api_url">https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent</string>
 
     <string name="open">Open</string>
     <string name="close">Close</string>

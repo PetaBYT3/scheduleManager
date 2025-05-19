@@ -32,6 +32,9 @@ class FragmentSplash : Fragment() {
         returnTransition = TransitionUtil.returnTransition()
         exitTransition = TransitionUtil.exitTransition()
         reenterTransition = TransitionUtil.reenterTransition()
+
+        sharedElementEnterTransition = TransitionUtil.sharedElementEnterTransition(requireActivity())
+        sharedElementReturnTransition = TransitionUtil.sharedElementReturnTransition(requireActivity())
     }
 
     override fun onCreateView(

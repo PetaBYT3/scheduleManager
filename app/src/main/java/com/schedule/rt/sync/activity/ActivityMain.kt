@@ -20,7 +20,6 @@ import com.schedule.rt.sync.databinding.ActivityMainBinding
 import com.schedule.rt.sync.fragment.FragmentAdministrator
 import com.schedule.rt.sync.fragment.FragmentDataLevel
 import com.schedule.rt.sync.fragment.FragmentHome
-import com.schedule.rt.sync.fragment.FragmentNotification
 import com.schedule.rt.sync.fragment.FragmentProfile
 import com.schedule.rt.sync.fragment.FragmentSettings
 import com.schedule.rt.sync.service.ForegroundService
@@ -118,11 +117,6 @@ class ActivityMain : AppCompatActivity() {
                 R.id.btnHome -> {
                     if (!isCurrentFragment(FragmentHome::class.java)) {
                         replaceFragment(FragmentHome(), R.id.btnHome)
-                    }
-                }
-                R.id.btnNotification -> {
-                    if (!isCurrentFragment(FragmentNotification::class.java)) {
-                        replaceFragment(FragmentNotification(), R.id.btnNotification)
                     }
                 }
                 R.id.btnSettings -> {

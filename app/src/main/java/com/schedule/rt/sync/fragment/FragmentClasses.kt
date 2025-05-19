@@ -12,6 +12,7 @@ import com.schedule.rt.sync.databinding.FragmentClassesBinding
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelClasses
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelData
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
 import com.schedule.rt.sync.viewmodel.ViewModelMajor
@@ -27,6 +28,7 @@ class FragmentClasses(
 
     private val vmData: ViewModelData by activityViewModels()
     private val vmUser: ViewModelUser by activityViewModels()
+    private val vmCourse: ViewModelCourse by activityViewModels()
     private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLevel: ViewModelLevel by activityViewModels()
     private val vmClasses: ViewModelClasses by activityViewModels()
@@ -81,6 +83,9 @@ class FragmentClasses(
     private fun recyclerView() {
         val recyclerView: RecyclerView = binding.rvClasses
         val adapter = AdapterClasses(
+            lifecycleOwner = viewLifecycleOwner,
+            vmCourse = vmCourse,
+            tvData1 = true,
             btnFirst = false,
             btnSecond = false,
             btnNext = true,

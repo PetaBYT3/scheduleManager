@@ -13,6 +13,7 @@ import com.schedule.rt.sync.databinding.FragmentRoomBinding
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 import com.schedule.rt.sync.viewmodel.ViewModelSchedule
 
@@ -27,6 +28,7 @@ class FragmentRoom(
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom: ViewModelRoom by activityViewModels()
     private val vmSchedule: ViewModelSchedule by activityViewModels()
+    private val vmCourse: ViewModelCourse by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +74,9 @@ class FragmentRoom(
     private fun rvRoom() {
         val recyclerView: RecyclerView = binding.rvRoom
         val adapter = AdapterRoom(
+            lifecycleOwner = viewLifecycleOwner,
+            vmCourse = vmCourse,
+            tvData1 = true,
             btnFirst = false,
             btnSecond = false,
             btnNext = true,

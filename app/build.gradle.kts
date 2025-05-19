@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.generativeai)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,4 +69,6 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.datastore.core)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
 }

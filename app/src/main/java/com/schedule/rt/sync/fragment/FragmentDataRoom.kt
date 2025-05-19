@@ -18,6 +18,7 @@ import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackSt
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
 
 class FragmentDataRoom : Fragment() {
@@ -27,6 +28,7 @@ class FragmentDataRoom : Fragment() {
 
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom : ViewModelRoom by activityViewModels()
+    private val vmCourse: ViewModelCourse by activityViewModels()
 
     private val fragmentTag = "dataRoom"
 
@@ -78,6 +80,9 @@ class FragmentDataRoom : Fragment() {
     private fun recyclerView() {
         val recyclerView: RecyclerView = binding.rvRoom
         val adapter = AdapterRoom(
+            lifecycleOwner = viewLifecycleOwner,
+            vmCourse = vmCourse,
+            tvData1 = true,
             btnFirst = true,
             btnSecond = true,
             btnNext = false,

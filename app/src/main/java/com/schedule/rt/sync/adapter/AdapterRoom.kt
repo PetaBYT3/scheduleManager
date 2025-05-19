@@ -6,11 +6,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.dataclass.DataClassRoom
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 
 class AdapterRoom(
+    private val lifecycleOwner: LifecycleOwner,
+    private val vmCourse: ViewModelCourse,
     private val tvData1: Boolean? = null,
     private val tvData2: Boolean? = null,
     private val tvData3: Boolean? = null,
@@ -49,6 +53,13 @@ class AdapterRoom(
         holder.tvTittle.text = buildString {
             append("Room ")
             append(currentItem.nameRoom)
+        }
+
+        vmCourse.getCourseSizeByRoom(currentItem.uidRoom).observe(lifecycleOwner) {
+            holder.tvData1.text = buildString {
+                append(it)
+                append(" Schedule")
+            }
         }
 
         holder.btnFirst.visibility = if (btnFirst == true) View.VISIBLE else View.GONE

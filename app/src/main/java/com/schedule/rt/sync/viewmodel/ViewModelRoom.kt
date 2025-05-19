@@ -21,6 +21,26 @@ class ViewModelRoom: ViewModel() {
         _uidBuildingReference.value = uidBuilding
     }
 
+    fun getAllRoom(): LiveData<List<DataClassRoom>> {
+        val dataRoom = MutableLiveData<List<DataClassRoom>>()
+        databaseReference.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listRoom = mutableListOf<DataClassRoom>()
+                for (dataSnapshot in snapshot.children) {
+                    val getRoom = dataSnapshot.getValue(DataClassRoom::class.java)
+                    getRoom?.let { listRoom.add(it) }
+                }
+                dataRoom.value = listRoom
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+
+        return dataRoom
+    }
+
     fun getRoom(): LiveData<List<DataClassRoom>> {
         val dataRoom = MutableLiveData<List<DataClassRoom>>()
         databaseReference.orderByChild("uidBuilding").equalTo(uidBuildingReference.value).addValueEventListener(object : ValueEventListener {
@@ -146,5 +166,18 @@ class ViewModelRoom: ViewModel() {
             }
         })
         return result
+    }
+
+    fun getRoomSizeByBuilding(uidBuilding: String?): LiveData<Int> {
+        val roomSize = MutableLiveData<Int>()
+        databaseReference.orderByChild("uidBuilding").equalTo(uidBuilding).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                roomSize.value = snapshot.childrenCount.toInt()
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+        return roomSize
     }
 }

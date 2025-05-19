@@ -69,6 +69,9 @@ class FragmentDataBuilding : Fragment() {
     private fun rvBuilding() {
         val recyclerView: RecyclerView = binding.rvBuilding
         val adapter = AdapterBuilding(
+            lifecycleOwner = viewLifecycleOwner,
+            vmRoom = vmRoom,
+            tvData1 = true,
             btnFirst = true,
             btnSecond = true,
             btnNext = true,
