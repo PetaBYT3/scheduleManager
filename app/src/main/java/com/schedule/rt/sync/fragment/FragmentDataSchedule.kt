@@ -96,10 +96,8 @@ class FragmentDataSchedule(
                 val nameRoom = it?.nameRoom
 
                 binding.clToolBar.title = buildString {
-                    append("Building ")
                     append(nameBuilding)
-                    append(", ")
-                    append("Room ")
+                    append(" ")
                     append(nameRoom)
                 }
             }
@@ -372,8 +370,9 @@ class FragmentDataSchedule(
                         val nameClasses = it?.nameClasses
 
                         selectCourse.toolBar.title = buildString {
-                            append("Level $nameLevel, ")
-                            append("Class $nameClasses")
+                            append(nameLevel)
+                            append(" ")
+                            append(nameClasses)
                         }
                     }
                 }
@@ -508,6 +507,7 @@ class FragmentDataSchedule(
     private fun editSchedule(uidLecturer: String?) {
         val fragmentCourse = FragmentSelectCourse().apply {
             onViewCreated = { selectCourse ->
+
                 selectCourse.toolBar.setNavigationOnClickListener {
                     requireActivity().supportFragmentManager.popBackStack()
                 }

@@ -33,143 +33,102 @@ class ViewModeGeminiAI() : ViewModel() {
         data class Error(val message: String) : Result()
     }
 
-    private val _findScheduleResult = MutableLiveData<DataClassCourse>()
-    val findScheduleResult: LiveData<DataClassCourse> get() = _findScheduleResult
+    private val _questionResult = MutableLiveData<String>()
+    val questionResult: LiveData<String> get() = _questionResult
 
-    fun clearPreviousResult() {
-        _findScheduleResult.value = DataClassCourse(
-            nameCourse = null,
-            sksCourse = null,
-            uidLecturer = null,
-            uidMajor = null,
-            uidLevel = null,
-            uidClasses = null,
-            uidCourse = null,
-            uidBuilding = null,
-            uidRoom = null,
-            day = null,
-            startTime = null,
-            endTime = null
-        )
+    fun clearQuestionResult() {
+        _questionResult.value = ""
     }
 
     private val _processResult = MutableLiveData<String>()
     val processResult: LiveData<String> get() = _processResult
 
-    private val _scheduleResult = MutableLiveData<Result>()
-    val scheduleResult: LiveData<Result> get() = _scheduleResult
+    private fun sendResult(result: String) {
+        _processResult.value = result
+    }
 
-    fun findScheduleTime(dataClassCourse: DataClassCourse) {
-        _scheduleResult.value = Result.Loading
+    fun answerCustomQuestion(question: String, useScheduleContext: Boolean) {
+        if (useScheduleContext) {
+            // Ambil data dari Firebase
+            val buildingData = mutableListOf<DataClassBuilding>()
+            val roomData = mutableListOf<DataClassRoom>()
+            val scheduleData = mutableListOf<DataClassCourse>()
 
-        // Validasi input course
-        if (dataClassCourse.nameCourse.isNullOrEmpty() || dataClassCourse.sksCourse.isNullOrEmpty() ||
-            dataClassCourse.uidClasses.isNullOrEmpty() || dataClassCourse.uidLecturer.isNullOrEmpty()) {
-            _scheduleResult.value = Result.Error("Data matakuliah tidak lengkap")
-            return
-        }
+            getAllBuilding().observeForever { buildings ->
+                buildingData.clear()
+                buildingData.addAll(buildings ?: emptyList())
+                getAllRoom().observeForever { rooms ->
+                    roomData.clear()
+                    roomData.addAll(rooms ?: emptyList())
+                    getAllSchedule().observeForever { schedules ->
+                        scheduleData.clear()
+                        scheduleData.addAll(schedules ?: emptyList())
 
-        // Ambil data dari Firebase
-        val buildingData = mutableListOf<DataClassBuilding>()
-        val roomData = mutableListOf<DataClassRoom>()
-        val scheduleData = mutableListOf<DataClassCourse>()
+                        // Validasi roomData
 
-        getAllBuilding().observeForever { buildings ->
-            buildingData.clear()
-            buildingData.addAll(buildings ?: emptyList())
-            getAllRoom().observeForever { rooms ->
-                roomData.clear()
-                roomData.addAll(rooms ?: emptyList())
-                getAllSchedule().observeForever { schedules ->
-                    scheduleData.clear()
-                    scheduleData.addAll(schedules ?: emptyList())
+                        // Log data yang akan dikirim ke AI
+                        Log.d("GenerativeAiViewModel", "Building Data: $buildingData")
+                        Log.d("GenerativeAiViewModel", "Room Data: $roomData")
+                        Log.d("GenerativeAiViewModel", "Schedule Data: $scheduleData")
 
-                    // Validasi roomData
-                    if (roomData.isEmpty()) {
-                        _scheduleResult.value = Result.Error("Tidak ada data ruangan tersedia untuk penjadwalan")
-                        return@observeForever
+                        // Prompt dengan konteks jadwal
+                        val aiPrompt = """
+                            You are an assistant for a university scheduling system. Answer the user's question about room availability or scheduling based on the provided data. Use natural, conversational language in Indonesian, and ensure the response is accurate by checking for conflicts or availability in the existing schedules. Use 24-hour time format (HH:MM) and lowercase English days (monday, tuesday, ..., friday).
+
+                            **User Question**:
+                            $question
+
+                            **Data**:
+                            - **Buildings**:
+                              ```json
+                              ${buildingData.toString()}
+                              ```
+                            - **Rooms**:
+                              ```json
+                              ${roomData.toString()}
+                              ```
+                            - **Existing Schedules**:
+                              ```json
+                              ${scheduleData.toString()}
+                              ```
+
+                            **Constraints**:
+                            - Operating hours: 06:00–17:00, Monday to Friday.
+                            - Each SKS (credit unit) equals 45 minutes.
+                            - Check for conflicts where a room, class (`uidClasses`), or lecturer (`uidLecturer`) is already scheduled during the requested time and day.
+                            - If the question involves room availability (e.g., "Is room G205 free on Tuesday from 13:00 to 17:00?"), verify if the room is unoccupied during the specified time by checking existing schedules.
+                            - If the room name in the question (e.g., G205) does not match any `name` in the rooms data, assume it refers to a room with a similar name or return a message indicating the room is not found.
+                            - Provide a clear, concise answer in Indonesian, avoiding technical jargon unless necessary.
+
+                            **Output**:
+                            A natural language response in Indonesian, answering the user's question based on the data. Do not return JSON or code unless explicitly requested.
+                        """.trimIndent()
+
+                        Log.d("GenerativeAiViewModel", "Custom Question Prompt (Schedule Context ON): $aiPrompt")
+                        getResponseFromAi(aiPrompt)
+
+                        // Hapus observer
                     }
-
-                    val sks = dataClassCourse.sksCourse?.toIntOrNull() ?: 0
-                    val durationMinutes = sks * 45
-
-                    // Buat prompt
-                    val aiPrompt = """
-                        Generate a schedule for an unscheduled course based on the provided data. Ensure no conflicts with existing schedules for the same class (`uidClasses`) or lecturer (`uidLecturer`). Each SKS equals 45 minutes. Use 24-hour time format (HH:MM) and lowercase English days (monday, tuesday, ..., friday). Select `uidBuilding` and `uidRoom` from available buildings and rooms, ensuring `uidRoom` belongs to the chosen `uidBuilding`.
-                        
-                        **Input Data**:
-                        - **Unscheduled Course**:
-                          ```json
-                          {
-                            "nameCourse": "${dataClassCourse.nameCourse}",
-                            "sksCourse": "${dataClassCourse.sksCourse}",
-                            "uidMajor": "${dataClassCourse.uidMajor ?: ""}",
-                            "uidLevel": "${dataClassCourse.uidLevel ?: ""}",
-                            "uidClasses": "${dataClassCourse.uidClasses}",
-                            "uidLecturer": "${dataClassCourse.uidLecturer}",
-                            "uidCourse": "${dataClassCourse.uidCourse ?: ""}"
-                          }
-                          ```
-                        - **Buildings**:
-                          ```json
-                          ${buildingData.toString()}
-                          ```
-                        - **Rooms** (each room has a `uidBuilding` linking to a building):
-                          ```json
-                          ${roomData.toString()}
-                          ```
-                        - **Existing Schedules** (reference for conflicts):
-                          ```json
-                          ${scheduleData.toString()}
-                          ```
-
-                        **Constraints**:
-                        - Schedule within operating hours: 06:00–17:00, Friday to Saturday.
-                        - Avoid scheduling conflicts where `uidClasses` or `uidLecturer` overlap in time and day.
-                        - Duration: ${sks} SKS = ${durationMinutes} minutes (each SKS equals 45 minutes).
-                        - All fields must be strings, including `sksCourse`.
-                        - If no slot is available or data is insufficient (e.g., no rooms), return an empty object `{}`.
-                        - To ensure maximum variety, follow these steps:
-                          1. List all valid slots (combinations of day, startTime, and room) that satisfy no conflicts.
-                          2. Randomly select one slot from this list, ensuring an equal chance for each valid slot.
-                          3. Prefer slots on days, times, or rooms that are less frequently used in existing schedules (e.g., if 'monday' or '08:00' appears multiple times, prioritize other days or times unless no other options exist).
-                          4. Distribute schedules evenly across days (monday to friday), start times (06:00, 07:00, ..., 17:00), and available rooms.
-                        - Example valid slots (for 2 SKS):
-                          - monday, 09:00–10:30, room T1
-                          - tuesday, 11:00–12:30, room T2
-                          - friday, 13:00–14:30, room T3
-                        - Output **must be a JSON object** and **nothing else** (no code, no explanations, no other formats).
-
-                        **Output Format**:
-                        Return a single JSON object representing the new schedule:
-                        ```json
-                        {
-                          "nameCourse": "${dataClassCourse.nameCourse}",
-                          "sksCourse": "${dataClassCourse.sksCourse}",
-                          "uidMajor": "${dataClassCourse.uidMajor ?: ""}",
-                          "uidLevel": "${dataClassCourse.uidLevel ?: ""}",
-                          "uidClasses": "${dataClassCourse.uidClasses}",
-                          "uidLecturer": "${dataClassCourse.uidLecturer}",
-                          "uidCourse": "${dataClassCourse.uidCourse ?: ""}",
-                          "uidBuilding": "selected_uid",
-                          "uidRoom": "selected_uid",
-                          "day": "lowercase_day",
-                          "startTime": "HH:MM",
-                          "endTime": "HH:MM"
-                        }
-                        ```
-                        or an empty object `{}` if no schedule can be created.
-                    """.trimIndent()
-
-                    getResponseFromAi(aiPrompt)
                 }
             }
+        } else {
+            // Prompt tanpa konteks jadwal
+            val aiPrompt = """
+                You are a helpful assistant. Answer the user's question in natural, conversational Indonesian. Provide a clear, concise response, avoiding technical jargon unless necessary. Do not use any external data or context unless explicitly provided in the question.
+
+                **User Question**:
+                $question
+
+                **Output**:
+                A natural language response in Indonesian. Do not return JSON or code unless explicitly requested.
+            """.trimIndent()
+
+            Log.d("GenerativeAiViewModel", "Custom Question Prompt (Schedule Context OFF): $aiPrompt")
+            getResponseFromAi(aiPrompt)
         }
     }
 
-    private fun getResponseFromAi(
-        prompt: String,
-    ) {
+    private fun getResponseFromAi(prompt: String){
         viewModelScope.launch {
             try {
                 val payload = JSONObject().apply {
@@ -208,196 +167,26 @@ class ViewModeGeminiAI() : ViewModel() {
                         Log.d("ViewModeGeminiAI", "Raw AI response: $content")
 
                         if (content != null) {
-                            parseScheduleResponse(content)
+                            _questionResult.value = content
+                            sendResult("Success")
                         } else {
-                            _scheduleResult.value = Result.Error("Tidak ada jadwal yang tersedia atau respons AI bukan JSON valid")
+//                            _scheduleResult.value = Result.Error("Tidak ada jadwal yang tersedia atau respons AI bukan JSON valid")
                         }
                     } else {
-                        _scheduleResult.value = Result.Error("Error: Response body is null")
+//                        _scheduleResult.value = Result.Error("Error: Response body is null")
                     }
                 } else {
                     val responseBody = response.body?.string()
-                    _scheduleResult.value = Result.Error("Error: ${response.code} - ${responseBody ?: "No response body"}")
+//                    _scheduleResult.value = Result.Error("Error: ${response.code} - ${responseBody ?: "No response body"}")
                 }
             } catch (e: IOException) {
-                _scheduleResult.value = Result.Error("Gagal terkoneksi: ${e.message ?: "Unknown network error"}")
+//                _scheduleResult.value = Result.Error("Gagal terkoneksi: ${e.message ?: "Unknown network error"}")
             } catch (e: Exception) {
-                _scheduleResult.value = Result.Error("Error: ${e.message ?: "Unknown error"}")
+//                _scheduleResult.value = Result.Error("Error: ${e.message ?: "Unknown error"}")
             }
         }
     }
 
-    private fun parseScheduleResponse(response: String) {
-        try {
-            // Tangani kasus tanpa backtick
-            var jsonString = response.trim()
-            if (jsonString.startsWith("```json") && jsonString.endsWith("```")) {
-                jsonString = jsonString.substringAfter("```json").substringBeforeLast("```").trim()
-            } else if (jsonString.startsWith("```") && jsonString.endsWith("```")) {
-                jsonString = jsonString.substringAfter("```").substringBeforeLast("```").trim()
-            }
-
-            // Deteksi kode non-JSON (misalnya, Python)
-            if (jsonString.contains("def ") || jsonString.contains("import ") || jsonString.startsWith("python")) {
-                Log.e("ViewModeGeminiAI", "Invalid response: Received code instead of JSON")
-                return
-            }
-
-            Log.d("ViewModeGeminiAI", "JSON to parse: $jsonString")
-
-            val jsonObject = JSONObject(jsonString)
-            if (jsonObject.length() == 0) {
-                Log.d("ViewModeGeminiAI", "No schedule available (empty JSON)")
-                return
-            }
-
-            _findScheduleResult.value = DataClassCourse(
-                nameCourse = jsonObject.optString("nameCourse", null),
-                sksCourse = jsonObject.optString("sksCourse", null),
-                uidLecturer = jsonObject.optString("uidLecturer", null),
-                uidMajor = jsonObject.optString("uidMajor", null),
-                uidLevel = jsonObject.optString("uidLevel", null),
-                uidClasses = jsonObject.optString("uidClasses", null),
-                uidCourse = jsonObject.optString("uidCourse", null),
-                uidBuilding = jsonObject.optString("uidBuilding", null),
-                uidRoom = jsonObject.optString("uidRoom", null),
-                day = jsonObject.optString("day", null),
-                startTime = jsonObject.optString("startTime", null),
-                endTime = jsonObject.optString("endTime", null)
-            ).also {
-                Log.d("ViewModeGeminiAI", "Parsed schedule: $it")
-            }
-        } catch (e: Exception) {
-            Log.e("ViewModeGeminiAI", "Parsing error: ${e.message}", e)
-            return
-        }
-    }
-
-    fun addSchedule(dataCourse: DataClassCourse): LiveData<String?> {
-        val uidCourse = dataCourse.uidCourse
-        val uidLecturer = dataCourse.uidLecturer
-        val uidClasses = dataCourse.uidClasses
-
-        val day = dataCourse.day
-        val uidRoom = dataCourse.uidRoom
-        val uidBuilding = dataCourse.uidBuilding
-        val startTime = dataCourse.startTime
-        val endTime = dataCourse.endTime
-
-        val databaseReference = FirebaseDatabase.getInstance().getReference("courses")
-
-        val startTimeInput = stringTimeToInt(startTime.toString())
-        val endTimeInput = stringTimeToInt(endTime.toString())
-        val result = MutableLiveData<String?>()
-
-        if (endTimeInput > 1439) {
-            result.value = "Invalid time"
-        } else {
-            val ref = databaseReference.orderByChild("uidRoom").equalTo(uidRoom)
-            ref.addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    var isScheduleConflict = false
-                    for (dataSnapshot in snapshot.children) {
-                        val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
-                        val scheduleDay = getSchedule?.day
-                        if (scheduleDay == day) {
-                            val startTimeRoom = stringTimeToInt(getSchedule?.startTime.toString())
-                            val endTimeRoom = stringTimeToInt(getSchedule?.endTime.toString())
-                            if (startTimeInput in startTimeRoom..endTimeRoom || endTimeInput in startTimeRoom..endTimeRoom) {
-                                isScheduleConflict = true
-                                break
-                            }
-                        }
-                    }
-
-                    if (isScheduleConflict == true) {
-                        result.value = "ScheduleConflict"
-                    } else {
-                        val dayRef = databaseReference.orderByChild("day").equalTo(day)
-                        dayRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(snapshot: DataSnapshot) {
-                                val lecturerSchedule = mutableListOf<DataClassCourse>()
-                                for (dataSnapshot in snapshot.children) {
-                                    val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
-                                    if (getSchedule?.uidLecturer == uidLecturer) {
-                                        getSchedule?.let { lecturerSchedule.add(it) }
-                                    }
-                                }
-
-                                var isLecturerConflict = false
-                                for (schedule in lecturerSchedule) {
-                                    val startTimeLecturer = stringTimeToInt(schedule.startTime.toString())
-                                    val endTimeLecturer = stringTimeToInt(schedule.endTime.toString())
-                                    if (startTimeInput in startTimeLecturer..endTimeLecturer || endTimeInput in startTimeLecturer..endTimeLecturer) {
-                                        isLecturerConflict = true
-                                        break
-                                    }
-                                }
-
-                                if (isLecturerConflict == true) {
-                                    result.value = "LecturerConflict"
-                                } else {
-                                    val classRef = databaseReference.orderByChild("day").equalTo(day)
-                                    classRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                                        override fun onDataChange(snapshot: DataSnapshot) {
-                                            val classSchedule = mutableListOf<DataClassCourse>()
-                                            for (snapshot in snapshot.children) {
-                                                val getSchedule = snapshot.getValue(DataClassCourse::class.java)
-                                                if (getSchedule?.uidClasses == uidClasses) {
-                                                    getSchedule?.let { classSchedule.add(it) }
-                                                }
-                                            }
-
-                                            var isClassConflict = false
-                                            for (schedule in classSchedule) {
-                                                val startTimeClass = stringTimeToInt(schedule.startTime.toString())
-                                                val endTimeClass = stringTimeToInt(schedule.endTime.toString())
-                                                if (startTimeInput in startTimeClass..endTimeClass || endTimeInput in startTimeClass..endTimeClass) {
-                                                    isClassConflict = true
-                                                    break
-                                                }
-                                            }
-
-                                            if (isClassConflict == true) {
-                                                result.value = "ClassConflict"
-                                            } else {
-                                                val dataSchedule = mapOf(
-                                                    "uidBuilding" to uidBuilding,
-                                                    "uidRoom" to uidRoom,
-                                                    "day" to day,
-                                                    "startTime" to startTime,
-                                                    "endTime" to endTime
-                                                )
-
-                                                databaseReference.child(uidCourse.toString()).updateChildren(dataSchedule).addOnCompleteListener {
-                                                    result.value = "Success"
-                                                }.addOnFailureListener {
-                                                    result.value = "Fail"
-                                                }
-                                            }
-                                        }
-
-                                        override fun onCancelled(error: DatabaseError) {
-                                            TODO("Not yet implemented")
-                                        }
-                                    })
-                                }
-                            }
-
-                            override fun onCancelled(error: DatabaseError) {
-                                TODO("Not yet implemented")
-                            }
-                        })
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
-                }
-            })
-        }
-        return result
-    }
 
     private fun getAllBuilding(): LiveData<List<DataClassBuilding>> {
         val dataBuilding = MutableLiveData<List<DataClassBuilding>>()
@@ -414,7 +203,6 @@ class ViewModeGeminiAI() : ViewModel() {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("ViewModeGeminiAI", "Failed to load buildings: ${error.message}")
-                _scheduleResult.value = Result.Error("Gagal memuat data gedung: ${error.message}")
             }
         })
         return dataBuilding
@@ -435,7 +223,6 @@ class ViewModeGeminiAI() : ViewModel() {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("ViewModeGeminiAI", "Failed to load rooms: ${error.message}")
-                _scheduleResult.value = Result.Error("Gagal memuat data ruangan: ${error.message}")
             }
         })
         return dataRoom
@@ -463,7 +250,6 @@ class ViewModeGeminiAI() : ViewModel() {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("ViewModeGeminiAI", "Failed to load schedules: ${error.message}")
-                _scheduleResult.value = Result.Error("Gagal memuat data jadwal: ${error.message}")
             }
         })
         return dataSchedule

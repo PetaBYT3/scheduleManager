@@ -71,8 +71,8 @@ class FragmentClasses(
 
                 binding.clToolBar.title = buildString {
                     append(nameMajor)
-                    append(", ")
-                    append("Level $nameLevel")
+                    append(" ")
+                    append(nameLevel)
                 }
             }
         }

@@ -58,7 +58,6 @@ class FragmentRoom(
         val uidBuilding = vmRoom.uidBuildingReference.value
         vmBuilding.getBuildingByUid(uidBuilding).observe(viewLifecycleOwner) {
             binding.clToolBar.title = buildString {
-                append("Building ")
                 append(it?.nameBuilding)
             }
         }

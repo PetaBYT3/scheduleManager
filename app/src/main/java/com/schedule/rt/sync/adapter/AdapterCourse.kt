@@ -63,7 +63,6 @@ class AdapterCourse(
     private val onFirstClick: ((DataClassCourse) -> Unit)? = null,
     private val onSecondClick: ((DataClassCourse) -> Unit)? = null,
     private val onNextClick: ((DataClassCourse) -> Unit)? = null,
-    private val onGeminiClick: ((DataClassCourse) -> Unit)? = null,
     private val settingsPreferences: SettingsPreferences? = null,
     private val onCountDown: Boolean? = null
 ) : RecyclerView.Adapter<AdapterCourse.ViewHolder>() {
@@ -187,8 +186,6 @@ class AdapterCourse(
             } else {
                 holder.btnNext.visibility = View.GONE
                 holder.btnFirst.visibility = View.VISIBLE
-                holder.btnGeminiAi.visibility = View.VISIBLE
-                holder.ivGeminiAi.imageTintList = null
             }
         }
 
@@ -218,10 +215,6 @@ class AdapterCourse(
 
         holder.btnNext.setOnClickListener {
             onNextClick?.invoke(currentItem)
-        }
-
-        holder.btnGeminiAi.setOnClickListener {
-            onGeminiClick?.invoke(currentItem)
         }
 
         if (onCountDown == true) {
@@ -350,8 +343,6 @@ class AdapterCourse(
         val btnSecond: ConstraintLayout = itemView.findViewById(R.id.btnSecond)
         val ivNext: ImageView = itemView.findViewById(R.id.ivNext)
         val btnNext: ConstraintLayout = itemView.findViewById(R.id.btnNext)
-        val btnGeminiAi: ConstraintLayout = itemView.findViewById(R.id.btnGeminiAi)
-        val ivGeminiAi: ImageView = itemView.findViewById(R.id.ivGeminiAi)
         val pbCountDown: ProgressBar = itemView.findViewById(R.id.pbCountDown)
         val layoutCountDown: LinearLayout = itemView.findViewById(R.id.layoutCountDown)
         val tvCountDown: TextView = itemView.findViewById(R.id.tvCountDown)

@@ -189,28 +189,6 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/btnGeminiAi"
-            android:visibility="gone"
-            tools:visibility="visible"
-            android:layout_marginStart="10dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_button"
-            android:padding="10dp">
-
-            <ImageView
-                android:id="@+id/ivGeminiAi"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:src="@drawable/gemini"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
     </LinearLayout>
 
     <ProgressBar

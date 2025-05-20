@@ -64,7 +64,6 @@ class FragmentDataClasses() : Fragment() {
         vmClasses.uidLevelReference.observe(viewLifecycleOwner) {
             vmLevel.getLevelByUid(it).observe(viewLifecycleOwner) {
                 binding.clToolBar.title = buildString {
-                    append("Level ")
                     append(it?.level)
                 }
             }

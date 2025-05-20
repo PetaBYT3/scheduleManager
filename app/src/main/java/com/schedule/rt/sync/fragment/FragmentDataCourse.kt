@@ -84,8 +84,8 @@ class FragmentDataCourse : Fragment() {
                 val nameClasses = it?.nameClasses
 
                 binding.clToolBar.title = buildString {
-                    append("Level $nameLevel, ")
-                    append("Class $nameClasses")
+                    append("$nameLevel ")
+                    append(nameClasses)
                 }
             }
         }
@@ -372,111 +372,6 @@ class FragmentDataCourse : Fragment() {
                                 }
                             }
                         }
-                    }
-                }
-                requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)
-                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
-            },
-            onGeminiClick = {
-                val fragmentCard = FragmentCard().apply {
-                    onViewCreated = { cardBinding ->
-
-                        cardBinding.layoutSecondCard.visibility = View.VISIBLE
-                        cardBinding.layoutMessage.visibility = View.VISIBLE
-                        cardBinding.tvData3.visibility = View.GONE
-                        cardBinding.tvData4.visibility = View.GONE
-                        cardBinding.tvData5.visibility = View.GONE
-
-                        cardBinding.toolBar.setNavigationOnClickListener {
-                            requireActivity().supportFragmentManager.popBackStack()
-                        }
-
-                        cardBinding.toolBar.title = "Find Schedule"
-                        cardBinding.ivCard.setImageResource(R.drawable.course)
-                        cardBinding.ivGeminiAi.imageTintList = null
-                        cardBinding.tvMessage.text = "AI Still Can Make Mistakes"
-                        cardBinding.ivYes.setImageResource(R.drawable.add_schedule)
-                        cardBinding.tvYes.text = "Add Schedule"
-
-                        val uidCourse = it.uidCourse.toString()
-                        val uidMajor = it.uidMajor.toString()
-                        val uidLevel = it.uidLevel.toString()
-                        val uidClasses = it.uidClasses.toString()
-                        val uidLecturer = it.uidLecturer.toString()
-
-                        vmCourse.getCourseByUid(uidCourse).observe(viewLifecycleOwner) {
-                            cardBinding.tvTitle.text = it?.nameCourse
-                            cardBinding.tvData1.text = buildString {
-                                append(it?.sksCourse)
-                                append(" SKS")
-                            }
-                            cardBinding.tvData4.text = buildString {
-                                append(it?.startTime)
-                                append(" : ")
-                                append(it?.endTime)
-                            }
-                        }
-
-                        vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
-                            cardBinding.tvData2.text = it?.nameLecturer
-                        }
-
-                        cardBinding.btnFindSchedule.setOnClickListener {
-                            vmGemini.clearPreviousResult()
-                            cardBinding.pbFindSchedule.visibility = View.VISIBLE
-                            vmCourse.getCourseByUid(uidCourse).observe(viewLifecycleOwner) {
-                                val dataCourse = DataClassCourse(
-                                    nameCourse = it?.nameCourse,
-                                    sksCourse = it?.sksCourse,
-                                    uidMajor = it?.uidMajor,
-                                    uidLevel = it?.uidLevel,
-                                    uidClasses = it?.uidClasses,
-                                    uidLecturer = it?.uidLecturer,
-                                    uidCourse = it?.uidCourse
-                                )
-                                vmGemini.findScheduleTime(dataCourse)
-                            }
-                        }
-
-                        vmGemini.findScheduleResult.observe(viewLifecycleOwner) { result ->
-                            if (result.day != null) {
-                                cardBinding.pbFindSchedule.visibility = View.GONE
-                                cardBinding.tvScData1.visibility = View.VISIBLE
-                                cardBinding.tvScData2.visibility = View.VISIBLE
-                                cardBinding.tvScData3.visibility = View.VISIBLE
-
-                                cardBinding.tvScData1.text = result.day?.capitalizeEachWord()
-
-                                vmBuilding.getBuildingByUid(result?.uidBuilding).observe(viewLifecycleOwner) {
-                                    val nameBuilding = it?.nameBuilding
-                                    vmRoom.getRoomByUid(result?.uidRoom).observe(viewLifecycleOwner) {
-                                        val nameRoom = it?.nameRoom
-                                        cardBinding.tvScData2.text = buildString {
-                                            append("Building ${nameBuilding}")
-                                            append(" ")
-                                            append("Room ${nameRoom}")
-                                        }
-                                    }
-                                }
-                                cardBinding.tvScData3.text = buildString {
-                                    append(result.startTime)
-                                    append(" - ")
-                                    append(result.endTime)
-                                }
-
-                                cardBinding.btnYes.setOnClickListener {
-                                    vmGemini.addSchedule(result)
-                                }
-                            } else {
-                                cardBinding.tvScData1.visibility = View.GONE
-                                cardBinding.tvScData2.visibility = View.GONE
-                                cardBinding.tvScData3.visibility = View.GONE
-                            }
-                        }
-                    }
-
-                    onDestroyView = {
-                        vmGemini.clearPreviousResult()
                     }
                 }
                 requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)

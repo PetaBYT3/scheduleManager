@@ -3,6 +3,7 @@ package com.schedule.rt.sync.activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +20,7 @@ import com.schedule.rt.sync.R
 import com.schedule.rt.sync.databinding.ActivityMainBinding
 import com.schedule.rt.sync.fragment.FragmentAdministrator
 import com.schedule.rt.sync.fragment.FragmentDataLevel
+import com.schedule.rt.sync.fragment.FragmentGeminiAi
 import com.schedule.rt.sync.fragment.FragmentHome
 import com.schedule.rt.sync.fragment.FragmentProfile
 import com.schedule.rt.sync.fragment.FragmentSettings
@@ -61,6 +63,13 @@ class ActivityMain : AppCompatActivity() {
         if (savedInstanceState == null) {
             supportFragmentManager.commit {
                 replaceFragment(FragmentHome(), R.id.btnHome)
+            }
+        }
+
+        binding.btnGeminiAi.imageTintList = null
+        binding.btnGeminiAi.setOnClickListener {
+            supportFragmentManager.commit {
+                add(R.id.mainBottomSheetContainer, FragmentGeminiAi())
             }
         }
 
@@ -147,6 +156,14 @@ class ActivityMain : AppCompatActivity() {
 
     fun btnDrawer() {
         drawerLayout.openDrawer(GravityCompat.START)
+    }
+
+    fun btnGeminiAi(visibility: Boolean) {
+        if (visibility) {
+            binding.btnGeminiAi.visibility = View.VISIBLE
+        } else {
+            binding.btnGeminiAi.visibility = View.GONE
+        }
     }
 
     fun replaceFragment(fragment: Fragment, menuItemUid: Int? = null) {
