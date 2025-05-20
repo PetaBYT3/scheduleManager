@@ -41,7 +41,7 @@
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_margin="7.5dp"
-                    android:src="@drawable/fullscreen" />
+                    tools:src="@drawable/fullscreen" />
 
             </com.google.android.material.card.MaterialCardView>
 
@@ -214,7 +214,7 @@
                 android:layout_height="wrap_content"
                 android:drawablePadding="15dp"
                 android:hint="Ask"
-                android:imeOptions="actionSend"
+                android:imeOptions="actionDone"
                 android:textSize="15dp" />
 
         </com.google.android.material.textfield.TextInputLayout>

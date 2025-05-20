@@ -12,7 +12,6 @@ import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
 import com.schedule.rt.sync.databinding.FragmentGeminiAiBinding
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
-import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModeGeminiAI
 
 class FragmentGeminiAi : Fragment() {
@@ -105,18 +104,18 @@ class FragmentGeminiAi : Fragment() {
 
         var isFullScreen = false
 
-        binding.btnFullscreen.setOnClickListener {
-            val currentHeight = binding.root.height
-            if (isFullScreen) {
-                TransitionUtil.animateHeight(binding.root, currentHeight, halfScreen)
-                binding.ivFullscreen.setImageResource(R.drawable.fullscreen)
-                isFullScreen = false
-            } else {
-                TransitionUtil.animateHeight(binding.root, currentHeight, fullScreen)
-                binding.ivFullscreen.setImageResource(R.drawable.close_fullscreen)
-                isFullScreen = true
-            }
-        }
+//        binding.btnFullscreen.setOnClickListener {
+//            val currentHeight = binding.root.height
+//            if (isFullScreen) {
+//                TransitionUtil.animateHeight(binding.root, currentHeight, halfScreen)
+//                binding.ivFullscreen.setImageResource(R.drawable.fullscreen)
+//                isFullScreen = false
+//            } else {
+//                TransitionUtil.animateHeight(binding.root, currentHeight, fullScreen)
+//                binding.ivFullscreen.setImageResource(R.drawable.close_fullscreen)
+//                isFullScreen = true
+//            }
+//        }
     }
 
     override fun onDestroyView() {
