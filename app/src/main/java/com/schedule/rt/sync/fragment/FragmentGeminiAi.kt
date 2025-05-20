@@ -11,6 +11,7 @@ import androidx.fragment.app.commit
 import com.schedule.rt.sync.R
 import com.schedule.rt.sync.activity.ActivityMain
 import com.schedule.rt.sync.databinding.FragmentGeminiAiBinding
+import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModeGeminiAI
 
@@ -59,12 +60,19 @@ class FragmentGeminiAi : Fragment() {
         }
 
         binding.btnSendPrompt.setOnClickListener {
-            binding.layoutNoData.visibility = View.GONE
-            binding.pbGeminiAI.visibility = View.VISIBLE
-            binding.tvResponse.visibility = View.GONE
             val prompt = binding.etPrompt.text.toString()
-            vmGemini.answerCustomQuestion(prompt, binding.scheduleContext.isSelected)
-            binding.etPrompt.text?.clear()
+            if (prompt.isNotEmpty()) {
+                binding.layoutNoData.visibility = View.GONE
+                binding.pbGeminiAI.visibility = View.VISIBLE
+                binding.tvResponse.visibility = View.GONE
+                vmGemini.answerCustomQuestion(prompt, binding.scheduleContext.isSelected)
+                binding.etPrompt.text?.clear()
+            } else {
+                showToastFragment(FragmentToast(
+                    R.drawable.fail,
+                    "Ask Something"
+                ))
+            }
         }
 
         vmGemini.processResult.observe(viewLifecycleOwner) {
