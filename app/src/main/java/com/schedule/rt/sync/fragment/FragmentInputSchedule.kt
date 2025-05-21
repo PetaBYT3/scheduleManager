@@ -112,9 +112,9 @@ class FragmentInputSchedule : Fragment() {
                 }.collect {
                     if (nameMajor != null && nameLevel != null && nameClasses != null) {
                         binding.tvData2.text = buildString {
-                            append("$nameMajor, ")
-                            append("Level $nameLevel, ")
-                            append("Class $nameClasses")
+                            append("$nameMajor ")
+                            append("$nameLevel ")
+                            append(nameClasses)
                         }
                     }
                 }

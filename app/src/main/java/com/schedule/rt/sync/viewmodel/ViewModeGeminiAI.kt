@@ -11,6 +11,9 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.schedule.rt.sync.dataclass.DataClassBuilding
 import com.schedule.rt.sync.dataclass.DataClassCourse
+import com.schedule.rt.sync.dataclass.DataClassLecturer
+import com.schedule.rt.sync.dataclass.DataClassLevel
+import com.schedule.rt.sync.dataclass.DataClassMajor
 import com.schedule.rt.sync.dataclass.DataClassRoom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,12 +30,6 @@ class ViewModeGeminiAI() : ViewModel() {
 
     private val client = OkHttpClient()
 
-    sealed class Result {
-        object Loading : Result()
-        data class Success(val schedule: DataClassCourse) : Result()
-        data class Error(val message: String) : Result()
-    }
-
     private val _questionResult = MutableLiveData<String>()
     val questionResult: LiveData<String> get() = _questionResult
 
@@ -47,72 +44,84 @@ class ViewModeGeminiAI() : ViewModel() {
         _processResult.value = result
     }
 
+    init {
+        getAllBuilding()
+        getAllRoom()
+        getAllCourse()
+        getAllLecturer()
+        getAllMajor()
+        getAllLevel()
+        getAllClasses()
+    }
+
+    private val dataBuilding = MutableLiveData<List<DataClassBuilding>>()
+    private val dataRoom = MutableLiveData<List<DataClassRoom>>()
+    private val dataCourse = MutableLiveData<List<DataClassCourse>>()
+    private val dataLecturer = MutableLiveData<List<DataClassLecturer>>()
+    private val dataMajor = MutableLiveData<List<DataClassMajor>>()
+    private val dataLevel = MutableLiveData<List<DataClassLevel>>()
+    private val dataClasses = MutableLiveData<List<DataClassCourse>>()
+
     fun answerCustomQuestion(question: String, useScheduleContext: Boolean) {
         if (useScheduleContext) {
-            // Ambil data dari Firebase
-            val buildingData = mutableListOf<DataClassBuilding>()
-            val roomData = mutableListOf<DataClassRoom>()
-            val scheduleData = mutableListOf<DataClassCourse>()
+            val aiPrompt = """
+                You are an assistant for a university scheduling system. Answer the user's question about room availability, lecturer availability, course scheduling, or related academic information based on the provided data. Use natural, conversational language in Indonesian, and ensure the response is accurate by checking for conflicts or availability in the existing schedules. Use 24-hour time format (HH:MM) and lowercase English days (monday, tuesday, ..., saturday).
 
-            getAllBuilding().observeForever { buildings ->
-                buildingData.clear()
-                buildingData.addAll(buildings ?: emptyList())
-                getAllRoom().observeForever { rooms ->
-                    roomData.clear()
-                    roomData.addAll(rooms ?: emptyList())
-                    getAllSchedule().observeForever { schedules ->
-                        scheduleData.clear()
-                        scheduleData.addAll(schedules ?: emptyList())
+                **User Question**:
+                $question
 
-                        // Validasi roomData
+                **Data**:
+                - **Buildings**:
+                  ```json
+                  ${dataBuilding.value}
+                  ```
+                - **Rooms**:
+                  ```json
+                  ${dataRoom.value}
+                  ```
+                - **Courses (Mata Kuliah)**:
+                  ```json
+                  ${dataCourse.value}
+                  ```
+                  Note: If `day`, `uidBuilding`, `uidRoom`, `startTime`, and `endTime` are `null` in a Course entry, it means the course has not been scheduled yet. Courses may also reference `uidMajor`, `uidLevel`, and `uidClasses` to link to specific programs, levels, and classes.
+                - **Lecturers**:
+                  ```json
+                  ${dataLecturer.value}
+                  ```
+                - **Majors (Program Studi)**:
+                  ```json
+                  ${dataMajor.value}
+                  ```
+                - **Levels (Tingkat)**:
+                  ```json
+                  ${dataLevel.value}
+                  ```
+                - **Classes (Kelas)**:
+                  ```json
+                  ${dataClasses.value}
+                  ```
 
-                        // Log data yang akan dikirim ke AI
-                        Log.d("GenerativeAiViewModel", "Building Data: $buildingData")
-                        Log.d("GenerativeAiViewModel", "Room Data: $roomData")
-                        Log.d("GenerativeAiViewModel", "Schedule Data: $scheduleData")
+                **Constraints**:
+                - Operating hours: 06:00–18:00, Monday to Saturday.
+                - Each SKS (credit unit) equals 45 minutes.
+                - Check for conflicts where a room (`uidRoom`), class (`uidClasses`), or lecturer (`uidLecturer`) is already scheduled during the requested time and day.
+                - If the question involves room availability (e.g., "Is room G205 free on Tuesday from 13:00 to 17:00?"), verify if the room is unoccupied during the specified time by checking existing schedules in Courses.
+                - If the question involves lecturer availability (e.g., "Is lecturer Dr. Ahmad free on Tuesday from 13:00 to 17:00?"), verify if the lecturer is unoccupied during the specified time by checking existing schedules linked via `uidLecturer` in Courses.
+                - If the question involves course scheduling or academic details (e.g., "Which courses for a specific major are not yet scheduled?" or "What classes have schedules on Tuesday?"), use the `Courses`, `Majors`, `Levels`, and `Classes` data to provide accurate answers.
+                - If the room name, lecturer name, major, level, or class in the question does not match any data, return a message indicating that the requested item is not found.
+                - Provide a clear, concise answer in Indonesian, avoiding technical jargon unless necessary.
 
-                        // Prompt dengan konteks jadwal
-                        val aiPrompt = """
-                            You are an assistant for a university scheduling system. Answer the user's question about room availability or scheduling based on the provided data. Use natural, conversational language in Indonesian, and ensure the response is accurate by checking for conflicts or availability in the existing schedules. Use 24-hour time format (HH:MM) and lowercase English days (monday, tuesday, ..., friday).
+                **Important Output Guidelines**:
+                - Do not include any UID values (e.g., `uidLecturer`, `uidRoom`, `uidMajor`, `uidLevel`, `uidClasses`) in the response, as they are internal identifiers.
+                - Instead, use descriptive names such as `nameLecturer` for lecturers, `nameRoom` for rooms, `nameMajor` for majors, `nameLevel` for levels, and `nameClasses` for classes when referring to entities in your response.
+                - For example, instead of saying "lecturer with uidLecturer 'lect-001' is busy," say "Dosen Dr. Ahmad is busy," using the `nameLecturer` field.
+                - You may still use UIDs internally to match data (e.g., linking `uidLecturer` in Courses to Lecturers), but they must not appear in the output.
 
-                            **User Question**:
-                            $question
-
-                            **Data**:
-                            - **Buildings**:
-                              ```json
-                              ${buildingData.toString()}
-                              ```
-                            - **Rooms**:
-                              ```json
-                              ${roomData.toString()}
-                              ```
-                            - **Existing Schedules**:
-                              ```json
-                              ${scheduleData.toString()}
-                              ```
-
-                            **Constraints**:
-                            - Operating hours: 06:00–17:00, Monday to Friday.
-                            - Each SKS (credit unit) equals 45 minutes.
-                            - Check for conflicts where a room, class (`uidClasses`), or lecturer (`uidLecturer`) is already scheduled during the requested time and day.
-                            - If the question involves room availability (e.g., "Is room G205 free on Tuesday from 13:00 to 17:00?"), verify if the room is unoccupied during the specified time by checking existing schedules.
-                            - If the room name in the question (e.g., G205) does not match any `name` in the rooms data, assume it refers to a room with a similar name or return a message indicating the room is not found.
-                            - Provide a clear, concise answer in Indonesian, avoiding technical jargon unless necessary.
-
-                            **Output**:
-                            A natural language response in Indonesian, answering the user's question based on the data. Do not return JSON or code unless explicitly requested.
-                        """.trimIndent()
-
-                        Log.d("GenerativeAiViewModel", "Custom Question Prompt (Schedule Context ON): $aiPrompt")
-                        getResponseFromAi(aiPrompt)
-
-                        // Hapus observer
-                    }
-                }
-            }
+                **Output**:
+                A natural language response in Indonesian, answering the user's question based on the data. Do not return JSON or code unless explicitly requested.
+            """.trimIndent()
+            getResponseFromAi(aiPrompt)
         } else {
-            // Prompt tanpa konteks jadwal
             val aiPrompt = """
                 You are a helpful assistant. Answer the user's question in natural, conversational Indonesian. Provide a clear, concise response, avoiding technical jargon unless necessary. Do not use any external data or context unless explicitly provided in the question.
 
@@ -122,8 +131,6 @@ class ViewModeGeminiAI() : ViewModel() {
                 **Output**:
                 A natural language response in Indonesian. Do not return JSON or code unless explicitly requested.
             """.trimIndent()
-
-            Log.d("GenerativeAiViewModel", "Custom Question Prompt (Schedule Context OFF): $aiPrompt")
             getResponseFromAi(aiPrompt)
         }
     }
@@ -188,8 +195,7 @@ class ViewModeGeminiAI() : ViewModel() {
     }
 
 
-    private fun getAllBuilding(): LiveData<List<DataClassBuilding>> {
-        val dataBuilding = MutableLiveData<List<DataClassBuilding>>()
+    private fun getAllBuilding() {
         val ref = FirebaseDatabase.getInstance().getReference("buildings")
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -205,11 +211,9 @@ class ViewModeGeminiAI() : ViewModel() {
                 Log.e("ViewModeGeminiAI", "Failed to load buildings: ${error.message}")
             }
         })
-        return dataBuilding
     }
 
-    private fun getAllRoom(): LiveData<List<DataClassRoom>> {
-        val dataRoom = MutableLiveData<List<DataClassRoom>>()
+    private fun getAllRoom() {
         val ref = FirebaseDatabase.getInstance().getReference("rooms")
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -225,40 +229,94 @@ class ViewModeGeminiAI() : ViewModel() {
                 Log.e("ViewModeGeminiAI", "Failed to load rooms: ${error.message}")
             }
         })
-        return dataRoom
     }
 
-    private fun getAllSchedule(): LiveData<List<DataClassCourse>> {
-        val dataSchedule = MutableLiveData<List<DataClassCourse>>()
+    private fun getAllCourse() {
         val ref = FirebaseDatabase.getInstance().getReference("courses")
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val listSchedule = mutableListOf<DataClassCourse>()
                 for (dataSnapshot in snapshot.children) {
                     val getSchedule = dataSnapshot.getValue(DataClassCourse::class.java)
-                    val day = getSchedule?.day?.lowercase()
-                    val uidBuilding = getSchedule?.uidBuilding
-                    val uidRoom = getSchedule?.uidRoom
-                    val startTime = getSchedule?.startTime
-                    val endTime = getSchedule?.endTime
-                    if (day != null && uidBuilding != null && uidRoom != null && startTime != null && endTime != null) {
-                        getSchedule.let { listSchedule.add(it) }
-                    }
+                    getSchedule?.let { listSchedule.add(it) }
                 }
-                dataSchedule.value = listSchedule
+                dataCourse.value = listSchedule
             }
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("ViewModeGeminiAI", "Failed to load schedules: ${error.message}")
             }
         })
-        return dataSchedule
     }
 
-    private fun stringTimeToInt(time: String): Int {
-        val timeSplit = time.split(":")
-        val hour = timeSplit[0].toInt()
-        val minute = timeSplit[1].toInt()
-        return hour * 60 + minute
+    private fun getAllLecturer() {
+        val ref = FirebaseDatabase.getInstance().getReference("lecturers")
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listLecturer = mutableListOf<DataClassLecturer>()
+                for (dataSnapshot in snapshot.children) {
+                    val getLecturer = dataSnapshot.getValue(DataClassLecturer::class.java)
+                    getLecturer?.let { listLecturer.add(it) }
+                }
+                dataLecturer.value = listLecturer
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+
+    private fun getAllMajor() {
+        val ref = FirebaseDatabase.getInstance().getReference("majors")
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listMajor = mutableListOf<DataClassMajor>()
+                for (dataSnapshot in snapshot.children) {
+                    val getMajor = dataSnapshot.getValue(DataClassMajor::class.java)
+                    getMajor?.let { listMajor.add(it) }
+                }
+                dataMajor.value = listMajor
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+
+    private fun getAllLevel() {
+        val ref = FirebaseDatabase.getInstance().getReference("levels")
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listLevel = mutableListOf<DataClassLevel>()
+                for (dataSnapshot in snapshot.children) {
+                    val getLevel = dataSnapshot.getValue(DataClassLevel::class.java)
+                    getLevel?.let { listLevel.add(it) }
+                }
+                dataLevel.value = listLevel
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
+
+    private fun getAllClasses() {
+        val ref = FirebaseDatabase.getInstance().getReference("classes")
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listClasses = mutableListOf<DataClassCourse>()
+                for (dataSnapshot in snapshot.children) {
+                    val getClasses = dataSnapshot.getValue(DataClassCourse::class.java)
+                    getClasses?.let { listClasses.add(it) }
+                }
+                dataClasses.value = listClasses
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+        })
     }
 }

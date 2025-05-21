@@ -56,9 +56,9 @@
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:background="@drawable/bg_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card"
                     android:padding="15dp">
 
                     <ImageView
@@ -71,21 +71,20 @@
 
                     <TextView
                         android:id="@+id/tvLecturer"
-                        android:layout_marginStart="10dp"
                         android:layout_width="0dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="20dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
                         android:text="Lecturer Data"
-                        app:layout_constraintBottom_toBottomOf="@+id/imageView5"
                         app:layout_constraintEnd_toStartOf="@+id/btnLecturer"
                         app:layout_constraintStart_toEndOf="@+id/imageView5"
-                        app:layout_constraintTop_toTopOf="@+id/imageView5" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/tvLecturerDescription"
-                        android:layout_marginTop="5dp"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
                         android:text="@string/lecturerDataDescription"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
@@ -112,10 +111,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_card"
                     android:padding="15dp">
 
                     <ImageView
@@ -128,21 +127,20 @@
 
                     <TextView
                         android:id="@+id/tvMajor"
-                        android:layout_marginStart="10dp"
                         android:layout_width="0dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="20dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
                         android:text="Major Data"
-                        app:layout_constraintBottom_toBottomOf="@+id/imageView6"
                         app:layout_constraintEnd_toStartOf="@+id/btnMajor"
                         app:layout_constraintStart_toEndOf="@+id/imageView6"
-                        app:layout_constraintTop_toTopOf="@+id/imageView6" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/tvMajorDescription"
-                        android:layout_marginTop="5dp"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
                         android:text="@string/majorDataDescription"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
@@ -169,10 +167,10 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_card"
                     android:padding="15dp">
 
                     <ImageView
@@ -185,21 +183,20 @@
 
                     <TextView
                         android:id="@+id/tvBuilding"
-                        android:layout_marginStart="10dp"
                         android:layout_width="0dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="20dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
                         android:text="Building Data"
-                        app:layout_constraintBottom_toBottomOf="@+id/imageView7"
                         app:layout_constraintEnd_toStartOf="@+id/btnBuilding"
                         app:layout_constraintStart_toEndOf="@+id/imageView7"
-                        app:layout_constraintTop_toTopOf="@+id/imageView7" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/tvBuildingDescription"
-                        android:layout_marginTop="5dp"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
                         android:text="@string/buildingDataDescription"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"

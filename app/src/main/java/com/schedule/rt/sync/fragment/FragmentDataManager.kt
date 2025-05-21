@@ -165,6 +165,10 @@ class FragmentDataManager : Fragment() {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.profile)
+                        cardBinding.tvData3.visibility = View.GONE
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
                         cardBinding.toolBar.title = "Add Manager"
                         cardBinding.ivYes.setImageResource(R.drawable.add)
                         cardBinding.tvYes.text = "Add"
