@@ -87,13 +87,17 @@ class FragmentDataManager : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.profile)
                         cardBinding.toolBar.title = "Delete Manager"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "This Lecturer Will No Longer Be Manager For This Major"
 
                         vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = it?.nameLecturer
@@ -157,48 +161,64 @@ class FragmentDataManager : Fragment() {
             }
             onAddClick = {
                 val uidLecturer = it.uidLecturer
+                val uidMajor = vmData.uidMajor.value
+                val uidMajorManager = it.uidMajorManager
 
-                val fragmentCard = FragmentCard().apply {
-                    onViewCreated = { cardBinding ->
+                if (uidMajorManager == uidMajor) {
+                    showToastFragment(FragmentToast(R.drawable.fail, "This Lecturer Is Already Managing This Major"))
+                } else {
+                    val fragmentCard = FragmentCard().apply {
+                        onViewCreated = { cardBinding ->
 
-                        cardBinding.toolBar.setNavigationOnClickListener {
-                            requireActivity().supportFragmentManager.popBackStack()
-                        }
+                            cardBinding.layoutMessage.visibility = View.VISIBLE
 
-                        cardBinding.ivCard.setImageResource(R.drawable.profile)
-                        cardBinding.tvData3.visibility = View.GONE
-                        cardBinding.tvData4.visibility = View.GONE
-                        cardBinding.tvData5.visibility = View.GONE
-                        cardBinding.toolBar.title = "Add Manager"
-                        cardBinding.ivYes.setImageResource(R.drawable.add)
-                        cardBinding.tvYes.text = "Add"
+                            cardBinding.toolBar.setNavigationOnClickListener {
+                                requireActivity().supportFragmentManager.popBackStack()
+                            }
 
-                        vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
-                            cardBinding.tvTitle.text = it?.nameLecturer
-                            cardBinding.tvData1.text = it?.nikLecturer
-                        }
+                            cardBinding.ivCard.setImageResource(R.drawable.profile)
+                            cardBinding.tvData3.visibility = View.GONE
+                            cardBinding.tvData4.visibility = View.GONE
+                            cardBinding.tvData5.visibility = View.GONE
+                            cardBinding.toolBar.title = "Add Manager"
+                            cardBinding.ivYes.setImageResource(R.drawable.add)
+                            cardBinding.tvYes.text = "Add"
+                            cardBinding.tvMessage.text = "This Lecturer Will Be Manager And Have Access To This Major"
 
-                        val uidMajor = vmData.uidMajor.value
-                        vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
-                            cardBinding.tvData2.text = it?.nameMajor
-                        }
+                            vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
+                                cardBinding.tvTitle.text = it?.nameLecturer
+                                cardBinding.tvData1.text = it?.nikLecturer
+                            }
 
-                        cardBinding.btnYes.setOnClickListener {
-                            vmLecturer.addLecturerManager(uidLecturer, uidMajor).observe(viewLifecycleOwner) {
-                                when (it) {
-                                    "Success" -> {
-                                        showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
-                                        requireActivity().supportFragmentManager.popBackStack()
+                            vmMajor.getMajorByUid(uidMajorManager).observe(viewLifecycleOwner) {
+                                val beforeUidMajor = it?.nameMajor ?: "-"
+                                vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
+                                    val afterUidMajor = it?.nameMajor
+                                    cardBinding.tvData2.text = buildString {
+                                        append(beforeUidMajor)
+                                        append(" -> ")
+                                        append(afterUidMajor)
                                     }
-                                    "Fail" -> {
-                                        showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                }
+                            }
+
+                            cardBinding.btnYes.setOnClickListener {
+                                vmLecturer.addLecturerManager(uidLecturer, uidMajor).observe(viewLifecycleOwner) {
+                                    when (it) {
+                                        "Success" -> {
+                                            showToastFragment(FragmentToast(R.drawable.check, "Add Success"))
+                                            requireActivity().supportFragmentManager.popBackStack()
+                                        }
+                                        "Fail" -> {
+                                            showToastFragment(FragmentToast(R.drawable.fail, "Add Failed"))
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                    replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
                 }
-                replaceFragmentWithBackStack(R.id.mainBottomSheetContainer, fragmentCard, fragmentTag)
             }
         }
         requireActivity().supportFragmentManager.popBackStack(fragmentTag, POP_BACK_STACK_INCLUSIVE)

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -116,7 +117,7 @@ class ViewModelSchedule: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelSchedule", "Error")
             }
         })
         return dataSchedule
@@ -138,7 +139,7 @@ class ViewModelSchedule: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelSchedule", "Error")
             }
         })
         return dataSchedule
@@ -160,7 +161,7 @@ class ViewModelSchedule: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelSchedule", "Error")
             }
         })
 
@@ -274,21 +275,21 @@ class ViewModelSchedule: ViewModel() {
                                         }
 
                                         override fun onCancelled(error: DatabaseError) {
-                                            TODO("Not yet implemented")
+                                            Log.e("ViewModelSchedule", "Error")
                                         }
                                     })
                                 }
                             }
 
                             override fun onCancelled(error: DatabaseError) {
-                                TODO("Not yet implemented")
+                                Log.e("ViewModelSchedule", "Error")
                             }
                         })
                     }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
+                    Log.e("ViewModelSchedule", "Error")
                 }
             })
         }

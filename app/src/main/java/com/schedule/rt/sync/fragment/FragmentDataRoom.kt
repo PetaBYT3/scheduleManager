@@ -20,6 +20,7 @@ import com.schedule.rt.sync.objectsingleton.TransitionUtil
 import com.schedule.rt.sync.viewmodel.ViewModelBuilding
 import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelRoom
+import com.schedule.rt.sync.viewmodel.ViewModelSchedule
 
 class FragmentDataRoom : Fragment() {
 
@@ -29,6 +30,7 @@ class FragmentDataRoom : Fragment() {
     private val vmBuilding: ViewModelBuilding by activityViewModels()
     private val vmRoom : ViewModelRoom by activityViewModels()
     private val vmCourse: ViewModelCourse by activityViewModels()
+    private val vmSchedule: ViewModelSchedule by activityViewModels()
 
     private val fragmentTag = "dataRoom"
 
@@ -134,18 +136,33 @@ class FragmentDataRoom : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+                        cardBinding.tvData2.visibility = View.GONE
+                        cardBinding.tvData3.visibility = View.GONE
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.room)
                         cardBinding.toolBar.title = "Delete Room"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "This Room Will Be Deleted, All Schedule That Related To This Room Will Be Deleted"
 
                         vmRoom.getRoomByUid(uidRoom).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = buildString {
                                 append("Room ")
                                 append(it?.nameRoom)
+                            }
+                        }
+
+                        vmCourse.getCourseSizeByRoom(uidRoom).observe(viewLifecycleOwner) {
+                            cardBinding.tvData1.text = buildString {
+                                append(it)
+                                append(" Courses")
                             }
                         }
 

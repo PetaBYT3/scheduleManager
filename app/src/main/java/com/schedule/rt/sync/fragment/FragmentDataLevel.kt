@@ -176,13 +176,19 @@ class FragmentDataLevel : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.level)
                         cardBinding.toolBar.title = "Delete Level"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "All Data Inside This Level Will Be Deleted"
 
                         vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = buildString {
@@ -193,6 +199,20 @@ class FragmentDataLevel : Fragment() {
                             cardBinding.tvData1.text = buildString {
                                 append("Semester ")
                                 append(it?.semester)
+                            }
+                        }
+
+                        vmClasses.getClassesSizeByLevel(uidLevel).observe(viewLifecycleOwner) {
+                            cardBinding.tvData2.text = buildString {
+                                append(it)
+                                append(" Classes")
+                            }
+                        }
+
+                        vmCourse.getCourseSizeByLevel(uidLevel).observe(viewLifecycleOwner) {
+                            cardBinding.tvData3.text = buildString {
+                                append(it)
+                                append(" Courses")
                             }
                         }
 

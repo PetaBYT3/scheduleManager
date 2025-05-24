@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -41,7 +42,7 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeClasses", "Error")
             }
         })
         return dataClasses
@@ -57,7 +58,7 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeClasses", "Error")
             }
         })
 
@@ -95,7 +96,7 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                addClassesStatus.value = "Error"
             }
         })
         return addClassesStatus
@@ -132,7 +133,7 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                editClassesStatus.value = "Error"
             }
         })
         return editClassesStatus
@@ -142,6 +143,7 @@ class ViewModelClasses: ViewModel() {
         val deleteClassesStatus = MutableLiveData<String?>()
 
         deleteCourse(uidClasses)
+        deleteUserData(uidClasses)
 
         databaseReference.child(uidClasses.toString()).removeValue().addOnSuccessListener {
             deleteClassesStatus.value = "Success"
@@ -163,7 +165,29 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeClasses", "Error")
+            }
+        })
+    }
+
+    private fun deleteUserData(uidClasses: String?) {
+        val ref = FirebaseDatabase.getInstance().getReference("users").orderByChild("uidClasses").equalTo(uidClasses)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (child in snapshot.children) {
+                        val updateChildren = mapOf(
+                            "uidMajor" to null,
+                            "uidLevel" to null,
+                            "uidClasses" to null
+                        )
+                        child.ref.updateChildren(updateChildren)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModeClasses", "Error")
             }
         })
     }
@@ -177,10 +201,26 @@ class ViewModelClasses: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeClasses", "Error")
             }
         })
 
+        return classesSize
+    }
+
+    fun getClassesSizeByMajor(uidMajor: String?): LiveData<Int> {
+        val classesSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val size = snapshot.childrenCount.toInt()
+                classesSize.value = size
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModeClasses", "Error")
+            }
+        })
         return classesSize
     }
 }

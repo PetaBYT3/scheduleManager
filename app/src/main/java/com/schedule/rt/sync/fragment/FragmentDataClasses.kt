@@ -142,18 +142,33 @@ class FragmentDataClasses() : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+                        cardBinding.tvData2.visibility = View.GONE
+                        cardBinding.tvData3.visibility = View.GONE
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.classes)
                         cardBinding.toolBar.title = "Delete Class"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "All Data Inside This Class Will Be Deleted"
 
                         vmClasses.getClassesByUid(uidClasses).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = buildString {
                                 append("Class ")
                                 append(it?.nameClasses)
+                            }
+                        }
+
+                        vmCourse.getCourseSizeByClasses(uidClasses.toString()).observe(viewLifecycleOwner) {
+                            cardBinding.tvData1.text = buildString {
+                                append(it)
+                                append(" Courses")
                             }
                         }
 

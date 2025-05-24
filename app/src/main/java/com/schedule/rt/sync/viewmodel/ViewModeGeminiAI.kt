@@ -208,7 +208,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ViewModeGeminiAI", "Failed to load buildings: ${error.message}")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -226,7 +226,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ViewModeGeminiAI", "Failed to load rooms: ${error.message}")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -244,7 +244,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ViewModeGeminiAI", "Failed to load schedules: ${error.message}")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -261,7 +261,7 @@ class ViewModeGeminiAI() : ViewModel() {
                 dataLecturer.value = listLecturer
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -279,7 +279,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -297,7 +297,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }
@@ -315,7 +315,7 @@ class ViewModeGeminiAI() : ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeGeminiAI", "Error")
             }
         })
     }

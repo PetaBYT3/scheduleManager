@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -27,7 +28,7 @@ class ViewModelBuilding: ViewModel() {
                 dataBuilding.value = listBuilding
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeBuilding", "Error")
             }
         })
         return dataBuilding
@@ -42,7 +43,7 @@ class ViewModelBuilding: ViewModel() {
                 dataBuilding.value = getBuilding
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeBuilding", "Error")
             }
         })
         return dataBuilding
@@ -94,7 +95,7 @@ class ViewModelBuilding: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                result.value = "Error"
             }
         })
         return result
@@ -146,20 +147,5 @@ class ViewModelBuilding: ViewModel() {
             }
         })
         return result
-    }
-
-    fun getRoomSize(uidBuilding: String?): LiveData<Int> {
-        val roomSize = MutableLiveData<Int>()
-        val roomDatabaseReference = FirebaseDatabase.getInstance().getReference("rooms").orderByChild("uidBuilding").equalTo(uidBuilding)
-        roomDatabaseReference.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                roomSize.value = snapshot.childrenCount.toInt()
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
-            }
-        })
-        return roomSize
     }
 }

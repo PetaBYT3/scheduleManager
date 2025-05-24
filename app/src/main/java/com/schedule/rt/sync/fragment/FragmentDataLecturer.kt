@@ -157,13 +157,17 @@ class FragmentDataLecturer : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.profile)
                         cardBinding.toolBar.title = "Delete Lecturer"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "This Lecturer Will Be Deleted And Every Course That Related To This Lecturer Will Be Deleted"
 
                         vmLecturer.getLecturerByUid(uidLecturer).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = it?.nameLecturer

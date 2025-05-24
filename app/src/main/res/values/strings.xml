@@ -56,4 +56,8 @@
     <string name="settingsAlarmDelayDescription">
         Set this to customize the delay of incoming schedule notification
     </string>
+
+    <string name="invalidUserData">
+        Your data is invalid, maybe its been deleted or something went wrong. Restart App to continue re-setting up your data
+    </string>
 </resources>

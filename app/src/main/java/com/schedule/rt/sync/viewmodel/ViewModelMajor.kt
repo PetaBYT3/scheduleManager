@@ -28,7 +28,7 @@ class ViewModelMajor: ViewModel() {
                 dataMajor.value = listMajor
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelMajor", "Error")
             }
         })
         return dataMajor
@@ -42,7 +42,7 @@ class ViewModelMajor: ViewModel() {
                 dataMajor.value = getMajor
             }
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ViewModelMajor", "onCancelled: ${error.message}")
+                Log.e("ViewModelMajor", "Error")
             }
         })
         return dataMajor
@@ -106,6 +106,7 @@ class ViewModelMajor: ViewModel() {
         deleteLevel(uidMajor)
         deleteClasses(uidMajor)
         deleteCourse(uidMajor)
+        deleteUserData(uidMajor)
 
         val lecturerRef = FirebaseDatabase.getInstance().getReference("lecturers").orderByChild("uidMajorManager").equalTo(uidMajor)
         lecturerRef.addListenerForSingleValueEvent(object : ValueEventListener{
@@ -126,7 +127,7 @@ class ViewModelMajor: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                deleteMajorStatus.value = "Error"
             }
         })
 
@@ -150,7 +151,7 @@ class ViewModelMajor: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelMajor", "Error")
             }
         })
     }
@@ -167,7 +168,7 @@ class ViewModelMajor: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelMajor", "Error")
             }
         })
     }
@@ -184,7 +185,29 @@ class ViewModelMajor: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelMajor", "Error")
+            }
+        })
+    }
+
+    private fun deleteUserData(uidMajor: String?) {
+        val ref = FirebaseDatabase.getInstance().getReference("users").orderByChild("uidMajor").equalTo(uidMajor)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (child in snapshot.children) {
+                        val updateChildren = mapOf(
+                            "uidMajor" to null,
+                            "uidLevel" to null,
+                            "uidClasses" to null
+                        )
+                        child.ref.updateChildren(updateChildren)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModelMajor", "Error")
             }
         })
     }

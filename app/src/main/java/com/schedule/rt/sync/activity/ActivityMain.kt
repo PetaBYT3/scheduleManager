@@ -22,6 +22,7 @@ import com.schedule.rt.sync.fragment.FragmentAdministrator
 import com.schedule.rt.sync.fragment.FragmentDataLevel
 import com.schedule.rt.sync.fragment.FragmentGeminiAi
 import com.schedule.rt.sync.fragment.FragmentHome
+import com.schedule.rt.sync.fragment.FragmentInvalidUser
 import com.schedule.rt.sync.fragment.FragmentProfile
 import com.schedule.rt.sync.fragment.FragmentSettings
 import com.schedule.rt.sync.service.ForegroundService
@@ -85,35 +86,48 @@ class ActivityMain : AppCompatActivity() {
         val btnScheduleManager = menu.findItem(R.id.btnScheduleManager)
 
         vmUser.getUser().observe(this) {
+            val uidMajor = it?.uidMajor
+            val uidLevel = it?.uidLevel
+            val uidClasses = it?.uidClasses
             val uidLecturer = it?.uidLecturer
 
-            if (uidLecturer != null) {
-                vmLecturer.getLecturerByUid(uidLecturer).observe(this) {
-                    val uidMajor = it?.uidMajorManager
-                    val administratorAccess = it?.administratorAccess.toString()
+            val isLecturerInvalid = uidLecturer == null
+            val isStudentInvalid = uidMajor == null && uidLevel == null && uidClasses == null
 
-                    if (administratorAccess == "True") {
-                        btnAdministrator.isVisible = true
-                    } else {
-                        btnAdministrator.isVisible = false
-                    }
-
-                    if (uidMajor != null) {
-                        vmMajor.getMajorByUid(uidMajor).observe(this) {
-                            vmLevel.uidMajorReference(uidMajor)
-                            vmClass.uidMajorReference(uidMajor)
-                            vmCourse.uidMajorReference(uidMajor)
-
-                            btnScheduleManager.title = it?.nameMajor
-                            btnScheduleManager.isVisible = true
-                        }
-                    } else {
-                        btnScheduleManager.isVisible = false
-                    }
+            if (isLecturerInvalid && isStudentInvalid) {
+                supportFragmentManager.commit {
+                    replace(R.id.mainFragmentContainer, FragmentInvalidUser())
                 }
             } else {
-                btnAdministrator.isVisible = false
-                btnScheduleManager.isVisible = false
+                val uidLecturer = it.uidLecturer
+                if (uidLecturer != null) {
+                    vmLecturer.getLecturerByUid(uidLecturer).observe(this) {
+                        val uidMajor = it?.uidMajorManager
+                        val administratorAccess = it?.administratorAccess.toString()
+
+                        if (administratorAccess == "True") {
+                            btnAdministrator.isVisible = true
+                        } else {
+                            btnAdministrator.isVisible = false
+                        }
+
+                        if (uidMajor != null) {
+                            vmMajor.getMajorByUid(uidMajor).observe(this) {
+                                vmLevel.uidMajorReference(uidMajor)
+                                vmClass.uidMajorReference(uidMajor)
+                                vmCourse.uidMajorReference(uidMajor)
+
+                                btnScheduleManager.title = it?.nameMajor
+                                btnScheduleManager.isVisible = true
+                            }
+                        } else {
+                            btnScheduleManager.isVisible = false
+                        }
+                    }
+                } else {
+                    btnAdministrator.isVisible = false
+                    btnScheduleManager.isVisible = false
+                }
             }
         }
 

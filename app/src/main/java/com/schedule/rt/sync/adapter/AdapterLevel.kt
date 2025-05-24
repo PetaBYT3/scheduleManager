@@ -50,7 +50,10 @@ class AdapterLevel(
         holder.tvData5.visibility = if (tvData5 == true) View.VISIBLE else View.GONE
 
         val currentItem = dataClassLevel[position]
-        holder.tvTittle.text = currentItem.level
+        holder.tvTittle.text = buildString {
+            append("Level ")
+            append(currentItem.level)
+        }
 
         holder.tvData1.text = buildString {
             append("Semester ")

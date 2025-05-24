@@ -17,6 +17,8 @@ import com.schedule.rt.sync.function.capitalizeEachWord
 import com.schedule.rt.sync.objectsingleton.DialogUtil.replaceFragmentWithBackStack
 import com.schedule.rt.sync.objectsingleton.DialogUtil.showToastFragment
 import com.schedule.rt.sync.objectsingleton.TransitionUtil
+import com.schedule.rt.sync.viewmodel.ViewModelClasses
+import com.schedule.rt.sync.viewmodel.ViewModelCourse
 import com.schedule.rt.sync.viewmodel.ViewModelData
 import com.schedule.rt.sync.viewmodel.ViewModelLecturer
 import com.schedule.rt.sync.viewmodel.ViewModelLevel
@@ -30,6 +32,8 @@ class FragmentDataMajor : Fragment() {
     private val vmData: ViewModelData by activityViewModels()
     private val vmMajor: ViewModelMajor by activityViewModels()
     private val vmLevel: ViewModelLevel by activityViewModels()
+    private val vmClasses: ViewModelClasses by activityViewModels()
+    private val vmCourse: ViewModelCourse by activityViewModels()
     private val vmLecturer: ViewModelLecturer by activityViewModels()
 
     private val fragmentTag = "dataMajor"
@@ -142,16 +146,43 @@ class FragmentDataMajor : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+                        cardBinding.tvData4.visibility = View.GONE
+                        cardBinding.tvData5.visibility = View.GONE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.major)
                         cardBinding.toolBar.title = "Delete Major"
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "All Data That Related To This Major Will Be Deleted"
 
                         vmMajor.getMajorByUid(uidMajor).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = it?.nameMajor
+                        }
+
+                        vmLevel.getLevelSizeByMajor(uidMajor).observe(viewLifecycleOwner) {
+                            cardBinding.tvData1.text = buildString {
+                                append(it)
+                                append(" Level")
+                            }
+                        }
+
+                        vmClasses.getClassesSizeByMajor(uidMajor).observe(viewLifecycleOwner) {
+                            cardBinding.tvData2.text = buildString {
+                                append(it)
+                                append(" Classes")
+                            }
+                        }
+
+                        vmCourse.getCourseSizeByMajor(uidMajor).observe(viewLifecycleOwner) {
+                            cardBinding.tvData3.text = buildString {
+                                append(it)
+                                append(" Courses")
+                            }
                         }
 
                         cardBinding.btnYes.setOnClickListener {

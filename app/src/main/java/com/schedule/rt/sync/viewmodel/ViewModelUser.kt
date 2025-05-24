@@ -1,6 +1,7 @@
 package com.schedule.rt.sync.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -35,7 +36,7 @@ class ViewModelUser(application: Application) : AndroidViewModel(application) {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
+                    Log.e("ViewModelUser", "Error")
                 }
             })
         }

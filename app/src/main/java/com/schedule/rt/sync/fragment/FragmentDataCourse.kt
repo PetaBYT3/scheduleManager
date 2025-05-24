@@ -226,6 +226,7 @@ class FragmentDataCourse : Fragment() {
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
                         cardBinding.tvData5.visibility = View.GONE
 
                         cardBinding.toolBar.setNavigationOnClickListener {
@@ -236,6 +237,7 @@ class FragmentDataCourse : Fragment() {
                         cardBinding.ivCard.setImageResource(R.drawable.course)
                         cardBinding.ivYes.setImageResource(R.drawable.delete)
                         cardBinding.tvYes.text = "Delete"
+                        cardBinding.tvMessage.text = "This Course Will Be Deleted And The Schedue If It Is Set"
 
                         vmCourse.getCourseByUid(uidCourse.toString()).observe(viewLifecycleOwner) {
                             cardBinding.tvTitle.text = buildString {

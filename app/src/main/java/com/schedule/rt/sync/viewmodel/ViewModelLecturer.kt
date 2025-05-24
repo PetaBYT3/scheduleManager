@@ -35,7 +35,7 @@ class ViewModelLecturer: ViewModel() {
                 dataLecturer.value = listLecturer
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLecturer", "Error")
             }
         })
         return dataLecturer
@@ -55,7 +55,7 @@ class ViewModelLecturer: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLecturer", "Error")
             }
         })
 
@@ -71,7 +71,7 @@ class ViewModelLecturer: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLecturer", "Error")
             }
         })
         return dataLecturer
@@ -229,7 +229,7 @@ class ViewModelLecturer: ViewModel() {
                 lecturerSize.value = snapshot.childrenCount.toInt()
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLecturer", "Error")
             }
         })
         return lecturerSize

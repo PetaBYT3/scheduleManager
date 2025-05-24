@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -34,7 +35,7 @@ class ViewModelRoom: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelRoom", "Error")
             }
         })
 
@@ -54,7 +55,7 @@ class ViewModelRoom: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelRoom", "Error")
             }
         })
         return dataRoom
@@ -68,7 +69,7 @@ class ViewModelRoom: ViewModel() {
                 dataRoom.value = getRoom
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelRoom", "Error")
             }
         })
         return dataRoom
@@ -130,7 +131,7 @@ class ViewModelRoom: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                editRoomStatus.value = "Error"
             }
         })
         return editRoomStatus
@@ -175,7 +176,7 @@ class ViewModelRoom: ViewModel() {
                 roomSize.value = snapshot.childrenCount.toInt()
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelRoom", "Error")
             }
         })
         return roomSize

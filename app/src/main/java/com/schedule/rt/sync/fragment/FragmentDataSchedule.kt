@@ -261,13 +261,18 @@ class FragmentDataSchedule(
                 val fragmentCard = FragmentCard().apply {
                     onViewCreated = { cardBinding ->
 
+                        cardBinding.layoutMessage.visibility = View.VISIBLE
+                        cardBinding.tvData5.visibility = View.GONE
+
                         cardBinding.toolBar.setNavigationOnClickListener {
                             requireActivity().supportFragmentManager.popBackStack()
                         }
 
+                        cardBinding.ivCard.setImageResource(R.drawable.course)
                         cardBinding.toolBar.title = "Delete Schedule"
                         cardBinding.ivYes.setImageResource(R.drawable.delete_schedule)
                         cardBinding.tvYes.text = "Delete Schedule"
+                        cardBinding.tvMessage.text = "This Course Schedule Will Be Deleted"
 
                         val uidCourse = it.uidCourse.toString()
                         val uidMajor = it.uidMajor.toString()
@@ -364,6 +369,7 @@ class FragmentDataSchedule(
 
                 val uidLevel = vmClasses.uidLevelReference.value
                 val uidClasses = vmCourse.uidClassesReference.value
+
                 vmLevel.getLevelByUid(uidLevel).observe(viewLifecycleOwner) {
                     val nameLevel = it?.level
                     vmClasses.getClassesByUid(uidClasses).observe(viewLifecycleOwner) {
@@ -395,10 +401,12 @@ class FragmentDataSchedule(
                 if (uidBuilding != null && uidRoom != null && startTime != null && endTime != null) {
                     val fragmentCard = FragmentCard().apply {
                         onViewCreated = { cardBinding ->
+
                             cardBinding.toolBar.setNavigationOnClickListener {
                                 requireActivity().supportFragmentManager.popBackStack()
                             }
 
+                            cardBinding.ivCard.setImageResource(R.drawable.course)
                             cardBinding.layoutMessage.visibility = View.VISIBLE
                             cardBinding.toolBar.title = "Reschedule"
                             cardBinding.ivYes.setImageResource(R.drawable.next)
@@ -437,9 +445,9 @@ class FragmentDataSchedule(
                                 }.collect {
                                     if (nameMajor != null && nameLevel != null && nameClasses != null) {
                                         cardBinding.tvData2.text = buildString {
-                                            append("$nameMajor, ")
-                                            append("Level $nameLevel, ")
-                                            append("Class $nameClasses")
+                                            append("$nameMajor ")
+                                            append("$nameLevel ")
+                                            append(nameClasses)
                                         }
                                     }
                                 }
@@ -467,7 +475,7 @@ class FragmentDataSchedule(
                                 }.collect {
                                     if (nameBuilding != null && nameRoom != null) {
                                         cardBinding.tvData4.text = buildString {
-                                            append("Building $nameBuilding, ")
+                                            append("Building $nameBuilding ")
                                             append("Room $nameRoom")
                                         }
                                     }

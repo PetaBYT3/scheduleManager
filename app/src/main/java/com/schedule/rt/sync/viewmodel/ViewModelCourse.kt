@@ -56,7 +56,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
         return dataCourse
@@ -78,7 +78,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
 
@@ -102,7 +102,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
 
@@ -125,7 +125,7 @@ class ViewModelCourse: ViewModel() {
                 dataCourse.value = listCourse
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
 
@@ -142,7 +142,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
         return dataCourse
@@ -180,7 +180,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                addCourseStatus.value = "Error"
             }
         })
         return addCourseStatus
@@ -232,7 +232,7 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                editCourseStatus.value = "Error"
             }
         })
         return editCourseStatus
@@ -258,7 +258,22 @@ class ViewModelCourse: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
+            }
+        })
+        return courseSize
+    }
+
+    fun getCourseSizeByBuilding(uidBuilding: String?): LiveData<Int> {
+        val courseSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidBuilding").equalTo(uidBuilding)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val size = snapshot.childrenCount.toInt()
+                courseSize.value = size
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModeCourse", "Error")
             }
         })
         return courseSize
@@ -273,9 +288,42 @@ class ViewModelCourse: ViewModel() {
                 courseSize.value = size
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModeCourse", "Error")
             }
         })
+        return courseSize
+    }
+
+    fun getCourseSizeByLevel(uidLevel: String?): LiveData<Int> {
+        val courseSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val size = snapshot.childrenCount.toInt()
+                courseSize.value = size
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModeCourse", "Error")
+            }
+        })
+        return courseSize
+    }
+
+    fun getCourseSizeByMajor(uidMajor: String?): LiveData<Int> {
+        val courseSize = MutableLiveData<Int>()
+        val ref = databaseReference.orderByChild("uidMajor").equalTo(uidMajor)
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val size = snapshot.childrenCount.toInt()
+                courseSize.value = size
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModeCourse", "Error")
+            }
+        })
+
         return courseSize
     }
 }

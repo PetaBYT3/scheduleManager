@@ -1,5 +1,6 @@
 package com.schedule.rt.sync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -34,7 +35,7 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLevel", "Error")
             }
         })
         return dataLevel
@@ -49,7 +50,7 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLevel", "Error")
             }
         })
         return dataLevel
@@ -85,7 +86,7 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                addLevelStatus.value = "Error"
             }
         })
         return addLevelStatus
@@ -123,7 +124,7 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                editLevelStatus.value = "Error"
             }
         })
         return editLevelStatus
@@ -134,6 +135,7 @@ class ViewModelLevel: ViewModel() {
 
         deleteCourse(uidLevel)
         deleteClasses(uidLevel)
+        deleteUserData(uidLevel)
 
         databaseReference.child(uidLevel.toString()).removeValue().addOnSuccessListener {
             deleteLevelStatus.value = "Success"
@@ -155,7 +157,7 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLevel", "Error")
             }
         })
     }
@@ -172,7 +174,29 @@ class ViewModelLevel: ViewModel() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLevel", "Error")
+            }
+        })
+    }
+
+    private fun deleteUserData(uidLevel: String?) {
+        val ref = FirebaseDatabase.getInstance().getReference("users").orderByChild("uidLevel").equalTo(uidLevel)
+        ref.addListenerForSingleValueEvent(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (child in snapshot.children) {
+                        val updateChildren = mapOf(
+                            "uidMajor" to null,
+                            "uidLevel" to null,
+                            "uidClasses" to null
+                        )
+                        child.ref.updateChildren(updateChildren)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ViewModelLevel", "Error")
             }
         })
     }
@@ -185,7 +209,7 @@ class ViewModelLevel: ViewModel() {
                 levelSize.value = snapshot.childrenCount.toInt()
             }
             override fun onCancelled(error: DatabaseError) {
-                TODO("Not yet implemented")
+                Log.e("ViewModelLevel", "Error")
             }
         })
         return levelSize
