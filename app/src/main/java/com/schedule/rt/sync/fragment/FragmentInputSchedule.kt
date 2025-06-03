@@ -155,7 +155,7 @@ class FragmentInputSchedule : Fragment() {
                     val startTime = String.format("%02d:%02d", hour, minute)
 
                     val sks = it?.sksCourse?.toInt()
-                    val duration = sks?.times(45) ?: 0
+                    val duration = sks?.times(40) ?: 0
                     val endDuration = hour * 60 + minute + duration
                     val endHour = endDuration / 60
                     val endMinute = endDuration % 60

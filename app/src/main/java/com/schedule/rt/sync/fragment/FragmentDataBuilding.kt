@@ -97,6 +97,7 @@ class FragmentDataBuilding : Fragment() {
                         inputBinding.btnYes.setOnClickListener {
                             val etFirst = inputBinding.etFirst.text.toString().capitalizeEachWord().capitalizeAfterDot()
                             val dataBuilding = DataClassBuilding(
+                                uidBuilding = uidBuilding,
                                 nameBuilding = etFirst
                             )
 
